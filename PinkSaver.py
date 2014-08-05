@@ -739,31 +739,35 @@ class MainWindow(wx.Frame):
 		self_text = self.dir_tree.GetItemText(self.selected_item)
 		if text == '删除':
 			path = self.GetCurrentPath(self.selected_item).decode(sys.getdefaultencoding())
-			try:
-				if os.path.isdir(path):
-					shutil.rmtree(path)
-					wx.PostEvent(self, OutputEvent('删除: ' + path + '成功'))
-				else:
-					os.remove(path)
-					wx.PostEvent(self, OutputEvent('删除: ' + path + '成功'))
-					id=re.search(r'^\[(\d+)\].*\.(html|txt)$',self_text).group(1)
-					image_path = os.path.join(path,'..','images',id).decode(sys.getdefaultencoding())
-					if os.path.isdir(image_path):
-						shutil.rmtree(image_path)
-						wx.PostEvent(self, OutputEvent('删除: ' + image_path + '成功'))
-					another_path = re.sub('html$', 'txt', path)
-					if os.path.isfile(another_path):
-						os.remove(another_path)
-						wx.PostEvent(self, OutputEvent('删除: ' + another_path + '成功'))
-					another_path = re.sub('txt$', 'html', path)
-					if os.path.isfile(another_path):
-						os.remove(another_path)
-						wx.PostEvent(self, OutputEvent('删除: ' + another_path + '成功'))						
-			except Exception as e:
-				wx.PostEvent(self, OutputEvent('删除: ' + path + '时发生错误！'))
-			wx.PostEvent(self, OutputEvent(''))
-			self.dir_tree.Delete(self.selected_item)
-			self.dir_tree.UnselectAll()
+			dlg = wx.MessageDialog(self, '确认真的要删除'+path+'吗?', '= =', wx.OK|wx.CANCEL|wx.ICON_QUESTION)
+			result = dlg.ShowModal()
+			dlg.Destroy()
+			if result == wx.ID_OK:
+				try:
+					if os.path.isdir(path):
+						shutil.rmtree(path)
+						wx.PostEvent(self, OutputEvent('删除: ' + path + '成功'))
+					else:
+						os.remove(path)
+						wx.PostEvent(self, OutputEvent('删除: ' + path + '成功'))
+						id=re.search(r'^\[(\d+)\].*\.(html|txt)$',self_text).group(1)
+						image_path = os.path.join(path,'..','images',id).decode(sys.getdefaultencoding())
+						if os.path.isdir(image_path):
+							shutil.rmtree(image_path)
+							wx.PostEvent(self, OutputEvent('删除: ' + image_path + '成功'))
+						another_path = re.sub('html$', 'txt', path)
+						if os.path.isfile(another_path):
+							os.remove(another_path)
+							wx.PostEvent(self, OutputEvent('删除: ' + another_path + '成功'))
+						another_path = re.sub('txt$', 'html', path)
+						if os.path.isfile(another_path):
+							os.remove(another_path)
+							wx.PostEvent(self, OutputEvent('删除: ' + another_path + '成功'))						
+				except Exception as e:
+					wx.PostEvent(self, OutputEvent('删除: ' + path + '时发生错误！'))
+				wx.PostEvent(self, OutputEvent(''))
+				self.dir_tree.Delete(self.selected_item)
+				self.dir_tree.UnselectAll()
 		else:
 			if text == '打开':
 				path =  self.GetCurrentPath(self.selected_item)
