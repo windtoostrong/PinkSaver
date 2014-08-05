@@ -14,7 +14,6 @@ from urlparse import parse_qs
 import re
 import traceback
 import requests
-import shutil
 import time
 import hashlib
 from urllib2 import URLError
@@ -23,6 +22,8 @@ from threading import Thread, Lock
 from Queue import Queue
 import win32com.client
 import html2text
+from send2trash import send2trash
+
 #global variable
 global body_index, full_tree, f
 
@@ -745,23 +746,23 @@ class MainWindow(wx.Frame):
 			if result == wx.ID_OK:
 				try:
 					if os.path.isdir(path):
-						shutil.rmtree(path)
+						send2trash(path)
 						wx.PostEvent(self, OutputEvent('删除: ' + path + '成功'))
 					else:
-						os.remove(path)
+						send2trash(path)
 						wx.PostEvent(self, OutputEvent('删除: ' + path + '成功'))
 						id=re.search(r'^\[(\d+)\].*\.(html|txt)$',self_text).group(1)
 						image_path = os.path.join(path,'..','images',id).decode(sys.getdefaultencoding())
 						if os.path.isdir(image_path):
-							shutil.rmtree(image_path)
+							send2trash(image_path)
 							wx.PostEvent(self, OutputEvent('删除: ' + image_path + '成功'))
 						another_path = re.sub('html$', 'txt', path)
 						if os.path.isfile(another_path):
-							os.remove(another_path)
+							send2trash(another_path)
 							wx.PostEvent(self, OutputEvent('删除: ' + another_path + '成功'))
 						another_path = re.sub('txt$', 'html', path)
 						if os.path.isfile(another_path):
-							os.remove(another_path)
+							send2trash(another_path)
 							wx.PostEvent(self, OutputEvent('删除: ' + another_path + '成功'))						
 				except Exception as e:
 					wx.PostEvent(self, OutputEvent('删除: ' + path + '时发生错误！'))
