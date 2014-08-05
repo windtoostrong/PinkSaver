@@ -112,7 +112,7 @@ class WorkerThread(Thread):
 				temp[merge_result.get('current_page')] = merge_result
 				self.output('标题: ' + merge_result.get('topic').decode(sys.getdefaultencoding()))
 				page = int(merge_result.get('page')[0])
-				self.output('一共: '+ str(page+1) + u'页')
+				self.output('一共: '+ str(page+1) + '页')
 
 		for i in range(1, page+1):
 			if (self._want_abort):
@@ -163,7 +163,7 @@ class WorkerThread(Thread):
 			page_node.attrib['id'] = 'pager_top ' + str(index)
 			index = index + 1
 
-		subpath = os.path.join(u'小粉红存档', '['+params.get('board')[0 ]+ ']')
+		subpath = os.path.join('小粉红存档', '['+params.get('board')[0 ]+ ']')
 		path = subpath.decode(sys.getdefaultencoding())
 		if not os.path.isdir(path):
 			os.makedirs(path)
@@ -175,7 +175,7 @@ class WorkerThread(Thread):
 			self.stop()
 			return None
 			
-		image_path = os.path.join(u'小粉红存档', '['+params.get('board')[0 ]+ ']', 'images', params.get('id')[0]).decode(sys.getdefaultencoding())
+		image_path = os.path.join('小粉红存档', '['+params.get('board')[0 ]+ ']', 'images', params.get('id')[0]).decode(sys.getdefaultencoding())
 		if os.path.isfile(full_path):
 			download_html = True
 		
@@ -224,7 +224,7 @@ class WorkerThread(Thread):
 					return
 				if  image_table.get(src) == '0':
 					replaced_url = os.path.join('images', params.get('id')[0], hashlib.md5(src).hexdigest() + '.' + suffix_table[src])
-					single_image_path = os.path.join(u'小粉红存档', '['+params.get('board')[0 ]+ ']', replaced_url).decode(sys.getdefaultencoding())
+					single_image_path = os.path.join('小粉红存档', '['+params.get('board')[0 ]+ ']', replaced_url).decode(sys.getdefaultencoding())
 					#print single_image_path
 					if os.path.isfile(single_image_path) and os.path.getsize(single_image_path) > 0:
 						image_table[src] = replaced_url
@@ -247,7 +247,7 @@ class WorkerThread(Thread):
 						image_table[src] = '-1'
 					else:
 						try:
-							single_image_path = os.path.join(u'小粉红存档', '['+params.get('board')[0]+ ']', replaced_url).decode(sys.getdefaultencoding())
+							single_image_path = os.path.join('小粉红存档', '['+params.get('board')[0]+ ']', replaced_url).decode(sys.getdefaultencoding())
 							image_file= open(single_image_path,'wb')
 							image_file.write(ans)
 							image_file.close()
@@ -282,7 +282,7 @@ class WorkerThread(Thread):
 				filesize =  '%.2f'%(filesize*1.0/1024) + ' KB'
 			else:
 				filesize =  '%.2f'%(filesize*1.0/(1024*1024)) + ' MB'
-			self.output(u'文件大小: ' + filesize)
+			self.output('文件大小: ' + filesize)
 			if (self._notify_window.filetype_combo.GetValue() == 'html'):
 				self._notify_window.recreatetree()
 		
@@ -302,7 +302,7 @@ class WorkerThread(Thread):
 				filesize =  '%.2f'%(filesize*1.0/1024) + ' KB'
 			else:
 				filesize =  '%.2f'%(filesize*1.0/(1024*1024)) + ' MB'
-			self.output(u'文件大小: ' + filesize)
+			self.output('文件大小: ' + filesize)
 			if (self._notify_window.filetype_combo.GetValue() == 'txt'):
 				self._notify_window.recreatetree()
 				
@@ -388,7 +388,7 @@ class WorkerThread(Thread):
 
 		url = url.replace('&', '&amp;')
 		tree.xpath('/html/body/table[1]/tr[2]/td')[0].insert(5, 
-		etree.fromstring('<a target="_blank" href="' + url + '">'+ u'去原帖' +'</a>'))
+		etree.fromstring('<a target="_blank" href="' + url + '">'+ '去原帖' +'</a>'))
 
 		return {'topic': topic, 'page': max_page or ['0'], 'tree' : tree, 'current_page': current_page}
 
@@ -631,27 +631,27 @@ class MainWindow(wx.Frame):
 		checkSizer = wx.BoxSizer(wx.HORIZONTAL)
 		searchSizer = wx.BoxSizer(wx.HORIZONTAL)
 		
-		self.input_text_label = wx.StaticText(self, -1, u'请把小粉红地址贴在这里↓ ↓ ↓')
-		self.output_text_label = wx.StaticText(self, -1, u'随便看不看的结果在这里↓ ↓ ↓')
+		self.input_text_label = wx.StaticText(self, -1, '请把小粉红地址贴在这里↓ ↓ ↓')
+		self.output_text_label = wx.StaticText(self, -1, '随便看不看的结果在这里↓ ↓ ↓')
 		self.input_text = wx.TextCtrl(self, -1,  style = wx.TE_MULTILINE | wx.TE_RICH | wx.TE_PROCESS_ENTER)
 		self.output_text = wx.TextCtrl(self, -1, style = wx.TE_MULTILINE | wx.TE_RICH | wx.TE_READONLY |wx.TE_PROCESS_ENTER) 
 
 		
-		self.clear_button = wx.Button(self, -1, label = u'清空 ╮(╯▽╰)╭ ')
-		self.confirm_button = wx.Button(self, -1, label = u'存帖 ヾ(≧O≦)〃')
-		self.cancel_button = wx.Button(self,-1, label= u'停止(￣_,￣ )')
+		self.clear_button = wx.Button(self, -1, label = '清空 ╮(╯▽╰)╭ ')
+		self.confirm_button = wx.Button(self, -1, label = '存帖 ヾ(≧O≦)〃')
+		self.cancel_button = wx.Button(self,-1, label= '停止(￣_,￣ )')
 		self.cancel_button.Disable()
 		
-		self.html_checkbox = wx.CheckBox(self, -1, label=u'存为html')
+		self.html_checkbox = wx.CheckBox(self, -1, label='存为html')
 		self.html_checkbox.SetValue(True)
-		self.image_checkbox = wx.CheckBox(self, -1, label=u'下载图片')
-		self.txt_checkbox = wx.CheckBox(self, -1, label=u'存为txt')
+		self.image_checkbox = wx.CheckBox(self, -1, label='下载图片')
+		self.txt_checkbox = wx.CheckBox(self, -1, label='存为txt')
 		
-		self.dir_path = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), u'小粉红存档').decode(sys.getdefaultencoding())
+		self.dir_path = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), '小粉红存档').decode(sys.getdefaultencoding())
 		self.search_box = wx.SearchCtrl(self, -1, style=wx.TE_PROCESS_ENTER)
 		self.search_text = ''
 		self.filetype_combo= wx.ComboBox(self, -1, value = "html", choices = ['html', 'txt'], style = wx.CB_DROPDOWN)
-		#self.refresh_button = wx.Button(self,-1, label= u'刷新所有')
+		#self.refresh_button = wx.Button(self,-1, label= '刷新所有')
 		self.dir_tree = wx.TreeCtrl(self, -1, style=wx.TR_HAS_BUTTONS + wx.TR_HIDE_ROOT)
 		if not os.path.isdir(self.dir_path): 
 			os.makedirs(self.dir_path)
@@ -882,7 +882,7 @@ class MainApp(wx.App):
 	"""Class Main App."""
 	def OnInit(self):
 		"""Init Main App."""
-		frame = MainWindow( None, -1, u'小粉红存贴助手')
+		frame = MainWindow( None, -1, '小粉红存贴助手')
 		frame.Show(True)
 		return True
 		
