@@ -631,7 +631,7 @@ class MainWindow(wx.Frame):
 		checkSizer = wx.BoxSizer(wx.HORIZONTAL)
 		searchSizer = wx.BoxSizer(wx.HORIZONTAL)
 		
-		self.input_text_label = wx.StaticText(self, -1, '请把小粉红地址贴在这里↓ ↓ ↓')
+		self.input_text_label = wx.StaticText(self, -1, '支持单个帖子/搜索结果/版面三类地址↓ ↓ ↓')
 		self.output_text_label = wx.StaticText(self, -1, '随便看不看的结果在这里↓ ↓ ↓')
 		self.input_text = wx.TextCtrl(self, -1,  style = wx.TE_MULTILINE | wx.TE_RICH | wx.TE_PROCESS_ENTER)
 		self.output_text = wx.TextCtrl(self, -1, style = wx.TE_MULTILINE | wx.TE_RICH | wx.TE_READONLY |wx.TE_PROCESS_ENTER) 
@@ -882,7 +882,7 @@ class MainApp(wx.App):
 	"""Class Main App."""
 	def OnInit(self):
 		"""Init Main App."""
-		frame = MainWindow( None, -1, '小粉红存贴助手')
+		frame = MainWindow( None, -1, '小粉红存贴助手(有bug请到board=3&id=727804反映)')
 		frame.Show(True)
 		return True
 		
