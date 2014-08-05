@@ -116,14 +116,14 @@ class WorkerThread(Thread):
 				self.output('一共: '+ str(page+1) + '页')
 
 		for i in range(1, page+1):
-			if (self._want_abort):
+			if self._want_abort:
 				self.stop()
 				return
 			page_url = url + '&page=' + str(i)
 			f.push({'url': page_url, 'current_page': i, 'end_page': page})
 
 		for i in range(1, page+1):
-			if (self._want_abort):
+			if self._want_abort:
 				self.stop()
 				return
 			page_url, current_page, end_page, ans = f.pop()
@@ -139,14 +139,14 @@ class WorkerThread(Thread):
 				temp[merge_result.get('current_page')] = merge_result
 
 		for i in range(0, page+1):
-			if (self._want_abort):
+			if self._want_abort:
 				self.stop()
 				return
 			if temp.get(i) is not None:
 				self.merge_single_html(temp[i].get('tree'), temp[i].get('current_page'))
 
 		for page_node in full_tree.xpath('//div[@id="pager_top" or @id="pager_bottom"]/a'):
-			if (self._want_abort):
+			if self._want_abort:
 				self.stop()
 				return
 			href = page_node.attrib['href'];
@@ -157,7 +157,7 @@ class WorkerThread(Thread):
 		
 		index = 1
 		for page_node in full_tree.xpath('//div[@class="pager_top"]/preceding-sibling::table[1]'):
-			if (self._want_abort):
+			if self._want_abort:
 				self.stop()
 				return
 			page_node.attrib['name']= 'pager_top ' + str(index)
@@ -172,7 +172,7 @@ class WorkerThread(Thread):
 		full_path = os.path.join(path, '[' + params.get('id')[0] + ']' + temp.get(0).get('topic') + '.html').decode(sys.getdefaultencoding())
 		txt_full_path = re.sub('html$', 'txt', full_path)
 						
-		if (self._want_abort or temp.get(0) is None):
+		if self._want_abort or temp.get(0) is None:
 			self.stop()
 			return None
 			
@@ -194,7 +194,7 @@ class WorkerThread(Thread):
 			#mime = MimeTypes()
 				
 			for img_node in full_tree.xpath('//img[@src]'):
-				if (self._want_abort):
+				if self._want_abort:
 					self.stop()
 					return None
 				src = img_node.get('src')
@@ -205,7 +205,7 @@ class WorkerThread(Thread):
 				types = ('png', 'jpg', 'gif', 'jpeg', 'bmp')
 				for t in types:
 					suffix = re.sub(t+'?.*$',t,suffix)
-				#if ((mime_type[0] is None) or (not(re.match('^image/', mime_type[0])))):
+				#if (mime_type[0] is None) or (not(re.match('^image/', mime_type[0])))):
 				if(suffix not in types):
 					self.output('警告: 丢弃不合法的图片地址 ' + src)
 					image_table[src] = '-1'
@@ -220,7 +220,7 @@ class WorkerThread(Thread):
 			
 			list =[]
 			for src in image_table:
-				if (self._want_abort):
+				if self._want_abort:
 					self.stop()
 					return
 				if  image_table.get(src) == '0':
@@ -235,7 +235,7 @@ class WorkerThread(Thread):
 						
 
 			for element in list:
-				if (self._want_abort):
+				if self._want_abort:
 						self.stop()
 						return
 				src, replaced_url, suffix, ans = f.pop()
@@ -267,7 +267,7 @@ class WorkerThread(Thread):
 			self.output('下载图片: 完毕！')
 			
 		
-		if (self._want_abort or temp.get(0) is None):
+		if self._want_abort or temp.get(0) is None:
 			self.stop()
 			return None
 			
@@ -284,10 +284,10 @@ class WorkerThread(Thread):
 			else:
 				filesize =  '%.2f'%(filesize*1.0/(1024*1024)) + ' MB'
 			self.output('文件大小: ' + filesize)
-			if (self._notify_window.filetype_combo.GetValue() == 'html'):
+			if self._notify_window.filetype_combo.GetValue() == 'html':
 				self._notify_window.recreatetree()
 		
-		if (self._want_abort):
+		if self._want_abort:
 			self.stop()
 			return
 			
@@ -304,14 +304,14 @@ class WorkerThread(Thread):
 			else:
 				filesize =  '%.2f'%(filesize*1.0/(1024*1024)) + ' MB'
 			self.output('文件大小: ' + filesize)
-			if (self._notify_window.filetype_combo.GetValue() == 'txt'):
+			if self._notify_window.filetype_combo.GetValue() == 'txt':
 				self._notify_window.recreatetree()
 				
 		return 0;
 
 
 	def get_single_html(self, url, current_page, end_page, content):
-		if (self._want_abort):
+		if self._want_abort:
 			return None
 				
 		code = 'gb2312'
@@ -327,37 +327,37 @@ class WorkerThread(Thread):
 			topic = re.sub(r"[\/\\\:\*\?\"\<\>\|]",'',topic)
 			topic = topic.strip(' \t\n\r')
 			pager = tree.xpath('//*[@id="pager_top"]/a[last()]')
-			if (len(pager) > 0):
+			if len(pager) > 0:
 				last_page_url = tree.xpath('//*[@id="pager_top"]/a[last()]')[0].attrib['href']
 				last_page_url = last_page_url.replace('?','')
 				params = parse_qs(last_page_url,True)
 				max_page = params.get('page')
 
 		for adv_node in tree.xpath('/html/body/table[1]'):
-			if (self._want_abort):
+			if self._want_abort:
 				return None
 			adv_node.insert(0, etree.fromstring('<tr height="30"></tr>'))
 
 		for adv_node in tree.xpath('/html/body/table[2]/tr[2]'):
-			if (self._want_abort):
+			if self._want_abort:
 				return None
 			adv_node.getparent().insert(2, etree.fromstring('<tr height="15"></tr>'))
 			adv_node.getparent().remove(adv_node)
 
 		for adv_node in tree.xpath('/html/body/center'):
-			if (self._want_abort):
+			if self._want_abort:
 				return None
 			adv_node.getparent().remove(adv_node)
 
 		for adv_node in tree.xpath('//td[@class="read"]/font[@color="gray"]'):
-			if (self._want_abort):
+			if self._want_abort:
 				return None
 			adv_node.getparent().remove(adv_node)
 		
 
-		if (current_page < end_page):
+		if current_page < end_page:
 			for adv_node in tree.xpath('//*[@id="pager_bottom"]'):
-				if (self._want_abort):
+				if self._want_abort:
 					return None
 				adv_node.getparent().remove(adv_node)
 
@@ -365,23 +365,23 @@ class WorkerThread(Thread):
 		index = 0
 		for adv_node in tree.xpath('/html/body/table[3]/tr[position() mod 4 = 1]'):
 			#adv_node.getparent().insert(4*index+1, etree.fromstring('<tr height="15"></tr>'))
-			if (self._want_abort):
+			if self._want_abort:
 				return None
 			adv_node.getparent().remove(adv_node)
 			index = index + 1
 
 		for adv_node in tree.xpath('/html/body/*[self::form or self::p]'):
-			if (self._want_abort):
+			if self._want_abort:
 				return	None
 			adv_node.getparent().remove(adv_node)
 
 		for adv_node in tree.xpath('/html/*/script'):
-			if (self._want_abort):
+			if self._want_abort:
 				return None
 			adv_node.getparent().remove(adv_node)
 
 		for adv_node in tree.xpath('/html/body/table[position() > 3]'):
-			if (self._want_abort):
+			if self._want_abort:
 				return None
 			adv_node.getparent().remove(adv_node)
 
@@ -396,16 +396,16 @@ class WorkerThread(Thread):
 
 	def merge_single_html(self, tree, current_page):
 		global body_index,full_tree
-		if (current_page == 0):
+		if current_page == 0:
 			index = 0
 			for node in tree.xpath('/html/head/*'):
-				if (self._want_abort):
+				if self._want_abort:
 					self.stop()
 					return None
 				full_tree.xpath('/html/head')[0].insert(index, node)
 				index = index + 1
 			for node in tree.xpath('/html/body/*'):
-				if (self._want_abort):
+				if self._want_abort:
 					self.stop()
 					return None
 				if(node.tag == 'div' and node.get('id') == 'pager_top'):
@@ -414,18 +414,18 @@ class WorkerThread(Thread):
 				body_index = body_index + 1
 		else:
 			for node in tree.xpath('/html/body/table[2]'):
-				if (self._want_abort):
+				if self._want_abort:
 					self.stop()
 					return None
 				node.getparent().remove(node)
 			for node in tree.xpath('/html/body/div[2]'):
-				if (self._want_abort):
+				if self._want_abort:
 					self.stop()
 					return None
 				node.getparent().remove(node)
 
 			for node in tree.xpath('/html/body/*[(self::div or self::table)]'):
-				if (self._want_abort):
+				if self._want_abort:
 					self.stop()
 					return None
 
@@ -454,7 +454,7 @@ class WorkerThread(Thread):
 		tree = etree.HTML(content)
 
 		for href_node in tree.xpath('//td/a[position()=1 and starts-with(@href, "showmsg.php?board")]'):
-			if (self._want_abort_out):
+			if self._want_abort_out:
 				return
 			href =  href_node.get('href')
 			href = 'http://bbs.jjwxc.net/' + href
@@ -505,7 +505,7 @@ class WorkerThread(Thread):
 		if (download_html == False and download_txt == False) or url == '':
 			return
 
-		if (url == ''):
+		if url == '':
 				return
 		(type, url) = self.get_url_type(url)
 
@@ -553,7 +553,7 @@ class WorkerThread(Thread):
 			f.pop()
 			
 		for url in self._notify_window.input_text.GetValue().split("\n"):
-			if (self._want_abort_out):
+			if self._want_abort_out:
 				return
 			self.main_handler(url, self._notify_window.html_checkbox.GetValue(), self._notify_window.image_checkbox.GetValue(), self._notify_window.txt_checkbox.GetValue())
 		self.recover()
@@ -802,7 +802,7 @@ class MainWindow(wx.Frame):
 
 	def OnTreeNodeRightClick(self, evt):
 		self.selected_item = evt.GetItem()
-		if (self.dir_tree.ItemHasChildren(self.selected_item)):
+		if self.dir_tree.ItemHasChildren(self.selected_item):
 			self.PopupMenu(self.dir_popupmenu)
 		else:
 			for item in self.file_popupmenu.GetMenuItems():
@@ -821,7 +821,7 @@ class MainWindow(wx.Frame):
 
 	def AddItem(self,root,path,depth):
 		for i in os.listdir(path):
-			tmpdir = path+'\\'+i
+			tmpdir = os.path.join(path,i)
 			id = re.sub(']$', '', re.sub('^\[', '', i))
 			if os.path.isdir(tmpdir):
 				if not notpositiveint(id):
