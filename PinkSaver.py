@@ -462,11 +462,7 @@ class WorkerThread(Thread):
 			self.output('')
 			
 	def get_url_type(self, url):
-		url = re.sub(r"#[^#]+$",'', url)
-		if url == '':
-			return None
-		else:
-			self.output('目标: ' + url)
+		self.output('目标: ' + url)
 		try:
 			result = urlparse(url)
 			params = parse_qs(result.query,True)
@@ -482,6 +478,8 @@ class WorkerThread(Thread):
 				else:
 					parsed_url = list(result)
 					parsed_url[4] = '&'.join([x for x in parsed_url[4].split('&') if (not re.match('^page=', x) and not re.match('^keyword=', x))])
+					# remove the # parameters
+					parsed_url[5] = ''
 					new_url = urlunparse(parsed_url)
 					return (self._single_page_type, new_url)
 			else:
@@ -505,9 +503,11 @@ class WorkerThread(Thread):
 		url = url.lower()
 		if (download_html == False and download_txt == False) or url == '':
 			return
-				
+
+		if (url == ''):
+				return
 		(type, url) = self.get_url_type(url)
-		
+
 		if type == self._invalid_page_type:
 			self.output('地址非法: ' + url)
 			self.output('')
