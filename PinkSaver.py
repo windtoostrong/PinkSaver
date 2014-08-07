@@ -119,6 +119,10 @@ class WorkerThread(Thread):
 				self.stop()
 				return
 			page_url, current_page, end_page, ans = f.pop()
+			file= open('d:\\' + str(current_page),'wb')
+			file.write(ans)
+			file.close()
+
 			if isinstance(ans, URLError):
 				self.output('错误: 打开地址' + url + '时发生错误！')
 				raise ans
@@ -312,6 +316,7 @@ class WorkerThread(Thread):
 		tree = etree.HTML(content)
 		topic = 'dummy'
 		max_page = 0
+
 	
 		if(current_page == 0): 
 			topic = tree.xpath('/html/body/title')[0].text
@@ -478,6 +483,7 @@ class WorkerThread(Thread):
 					return (self._invalid_page_type, category_from_url, url)
 				else:
 					parsed_url[4] = '&'.join([x for x in parsed_url[4].split('&') if (not re.match('^page=', x) and not re.match('^keyword=', x))])
+					parsed_url[5] = ''
 					new_url = urlunparse(parsed_url)
 					return (self._single_page_type, category_from_url, new_url)
 			else:
@@ -725,19 +731,24 @@ class MainWindow(wx.Frame):
 		self.worker = None
 
 
-	def RefreshTreeAfterDownload(self, root, board, category, name, depth):
-		root_data = self.dir_tree.GetItemData(root).GetData()
-		item, cookie = self.dir_tree.GetFirstChild(self.dir_tree_root)
+	def RefreshTreeAfterDownload(self, parent, board, category, name, depth):
+		print parent
+		print board
+		print category
+		print name
+		print depth
+		parent_data = self.dir_tree.GetItemData(parent).GetData()
+		item, cookie = self.dir_tree.GetFirstChild(parent)
 		item = None
 		# adding category
-		if root_data.depth == 0:
-			item = self.InsertNode(root, board)
+		if parent_data.depth == 0:
+			item = self.InsertNode(parent, board)
 			self.RefreshTreeAfterDownload(item, board, category, name, depth+1)
-		if root_data.depth == 1:
-			item = self.InsertNode(root, category)
+		if parent_data.depth == 1:
+			item = self.InsertNode(parent, category)
 			self.RefreshTreeAfterDownload(item, board, category, name, depth+1)
-		if root_data.depth == 2:
-			self.InsertNode(root, name)
+		if parent_data.depth == 2:
+			self.InsertNode(parent, name)
 		
 
 	def InsertNode(self, root, name):
@@ -756,12 +767,11 @@ class MainWindow(wx.Frame):
 			if self.dir_tree.GetItemText(item) == name:
 				return item
 			if self.dir_tree.GetItemText(item) > name:
-				self.dir_tree.InsertItemBefore(parent=root, index=index, text=name, data=data)
-				inserted=True
-				break
+				return self.dir_tree.InsertItemBefore(parent=root, index=index, text=name, data=data)
 			item, cookie = self.dir_tree.GetNextChild(root, cookie)
-		if not inserted:
-			self.dir_tree.AppendItem(parent=root, text=name, data=data)
+
+		return self.dir_tree.AppendItem(parent=root, text=name, data=data)
+
 
 
 	def RecreateTree(self):
@@ -904,7 +914,6 @@ class MainWindow(wx.Frame):
 				else:
 					for subfolder in os.listdir(tmpdir):
 						childdir = os.path.join(tmpdir, subfolder)
-						print childdir
 						if os.path.isdir(childdir):
 							if os.path.exists(os.path.join(uncatedir, i)):
 								send2trash(os.path.join(uncatedir, i))
