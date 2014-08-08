@@ -23,6 +23,7 @@ from Queue import Queue
 import win32com.client
 import html2text
 import shutil
+import socket
 from send2trash import send2trash
 
 #global variable
@@ -93,12 +94,8 @@ class WorkerThread(Thread):
 
 		for i in range(0, 1):
 			url, current_page, end_page, ans = f.pop()
-			if isinstance(ans, URLError):
-				self.output('错误: 打开地址' + url + '发生错误！')
+			if isinstance(ans, Exception):
 				raise ans
-			else:
-				if isinstance(ans, Exception):
-					raise ans
 
 			merge_result = self.get_single_html(url, current_page, end_page, ans)
 			if merge_result is not None:
@@ -118,17 +115,9 @@ class WorkerThread(Thread):
 			if self._want_abort:
 				self.stop()
 				return
-			page_url, current_page, end_page, ans = f.pop()
-			file= open('d:\\' + str(current_page),'wb')
-			file.write(ans)
-			file.close()
-
-			if isinstance(ans, URLError):
-				self.output('错误: 打开地址' + url + '时发生错误！')
+			url, current_page, end_page, ans = f.pop()
+			if isinstance(ans, Exception):
 				raise ans
-			else:
-				if isinstance(ans, Exception):
-					raise ans
 
 			merge_result = self.get_single_html(page_url, current_page, end_page, ans)
 			if merge_result is not None:
@@ -230,13 +219,12 @@ class WorkerThread(Thread):
 						list.append(src)
 						f.push({'url': src, 'current_page': replaced_url, 'end_page': suffix_table[src]})
 						
-
 			for element in list:
 				if self._want_abort:
 						self.stop()
 						return
 				src, replaced_url, suffix, ans = f.pop()
-				if isinstance(ans, URLError):
+				if isinstance(ans, URLError)  or isinstance(ans, socket.error):
 					self.output('错误: 下载图片' + src + '时发生错误！')
 					image_table[src] = '-1'
 				else:
@@ -440,12 +428,8 @@ class WorkerThread(Thread):
 		ans = None
 		for i in range(0, 1):
 			url, current_page, end_page, ans = f.pop()
-			if isinstance(ans, URLError):
-				self.output('错误: 打开地址' + url + '发生错误！')
+			if isinstance(ans, Exception):
 				raise ans
-			else:
-				if isinstance(ans, Exception):
-					raise ans
 					
 		code = 'gb2312'
 		content = ans.decode(code,'ignore')
@@ -538,10 +522,13 @@ class WorkerThread(Thread):
 		except URLError as e:
 			self.output('错误: 打开地址发生错误，请检查网络连接是否畅通！')
 			self.output(traceback.format_exc().decode(sys.getdefaultencoding()))
+		except socket.error as e:
+			self.output('错误: 打开地址发生错误，请检查网络连接是否畅通！')
+			self.output(traceback.format_exc().decode(sys.getdefaultencoding()))
 		except IOError as e:
 			if e.errno == 13:
 				self.output('错误: 权限不够或者该文件正在使用中，请删除后重试！')
-				self.output(traceback.format_exc().decode(sys.getdefaultencoding()))
+			self.output(traceback.format_exc().decode(sys.getdefaultencoding()))
 		except IndexError as e:
 			self.output('错误: 网页不存在或已删除！')
 			self.output(traceback.format_exc().decode(sys.getdefaultencoding()))
@@ -678,13 +665,15 @@ class MainWindow(wx.Frame):
 		self.RecreateTree()
 		self.selected_item = self.dir_tree.GetRootItem()
 		self.file_popupmenu = wx.Menu()
-		for text in "刷新(存贴时不可用) 打开 删除 打开原帖 移动至其他分类".split():
+		for text in "刷新(存贴时不可用) 打开 删除 打开原帖".split():
 			item = self.file_popupmenu.Append(-1, text)
 			self.Bind(wx.EVT_MENU , self.OnPopupItemSelected, item)
 		self.dir_popupmenu = wx.Menu()
 		for text in "打开 删除 新建分类".split():
 			item = self.dir_popupmenu.Append(-1, text)
 			self.Bind(wx.EVT_MENU , self.OnPopupItemSelected, item)
+		self.category_menu = wx.Menu()
+		self.file_popupmenu.AppendMenu(-1,'移动至其他分类', self.category_menu)
 
 		leftSizer.Add(self.input_text_label, 1, wx.CENTER)
 		leftSizer.Add(self.input_text, 6, wx.EXPAND)
@@ -732,11 +721,6 @@ class MainWindow(wx.Frame):
 
 
 	def RefreshTreeAfterDownload(self, parent, board, category, name, depth):
-		print parent
-		print board
-		print category
-		print name
-		print depth
 		parent_data = self.dir_tree.GetItemData(parent).GetData()
 		item, cookie = self.dir_tree.GetFirstChild(parent)
 		item = None
@@ -748,20 +732,27 @@ class MainWindow(wx.Frame):
 			item = self.InsertNode(parent, category)
 			self.RefreshTreeAfterDownload(item, board, category, name, depth+1)
 		if parent_data.depth == 2:
-			self.InsertNode(parent, name)
+			item = self.InsertNode(parent, name)
+		
+		if parent_data.depth>0:
+			self.dir_tree.Expand(parent)
 		
 
 	def InsertNode(self, root, name):
 		root_data = self.dir_tree.GetItemData(root).GetData()
-		item, cookie = self.dir_tree.GetFirstChild(root)
 		index = -1;
 		inserted = False
-		# adding category
+
+		if root_data.depth == 0:
+			board = re.search(r'^\[(\d+)\]', name).group(1)
+			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + 'board='+board, os.path.join(root_data.path, name), root_data.depth+1))
 		if root_data.depth == 1:
-			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + '#category='+name, name, root_data.depth+1))
+			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + '#category='+name, os.path.join(root_data.path, name), root_data.depth+1))
 		if root_data.depth == 2:
 			id = re.search(r'^\[(\d+)\]',name).group(1)
-			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url.replace('#category','&id='+id+'#category'), id, root_data.depth+1))
+			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url.replace('#category','&id='+id+'#category'), os.path.join(root_data.path, name), root_data.depth+1))
+
+		item, cookie = self.dir_tree.GetFirstChild(root)
 		while item.IsOk():
 			index = index+1
 			if self.dir_tree.GetItemText(item) == name:
@@ -853,12 +844,26 @@ class MainWindow(wx.Frame):
 						new_category = new_category.strip(' \t\n\r')
 						if new_category == '' or re.match(r'[\/\\\:\*\?\"\<\>\|]', new_category) :
 							wx.MessageBox('新建分类不能为空且不能包含如下字符 / \ : * ? " < > |' )
+							return
+						category, cookie = self.dir_tree.GetFirstChild(self.selected_item)
+						while category.IsOk():
+							if self.dir_tree.GetItemText(category) == new_category:
+								wx.MessageBox('同名分类已经存在!' )
+								return
+							category, cookie = self.dir_tree.GetNextChild(self.selected_item, cookie)
+						new_node = self.InsertNode(self.selected_item, new_category)
+						data = self.dir_tree.GetItemData(new_node).GetData()
+						try:
+							os.makedirs(data.path)
+						except Exception as e:
+							wx.PostEvent(self, OutputEvent('错误: 无法创建目录 ' + data.path))
+							self.RecreateTree()
 						else:
-							self.InsertNode(self.selected_item, new_category)
+							wx.PostEvent(self, OutputEvent('成功: 创建目录 ' + data.path))
 				else:
 					if text == '打开原帖':
 						try:
-							os.startfile(url)
+							os.startfile(data.url)
 						except Exception as e:
 							wx.PostEvent(self, OutputEvent('打开: ' + data.url + '时发生错误！'))
 						else:
@@ -871,6 +876,49 @@ class MainWindow(wx.Frame):
 							self.txt_checkbox.SetValue(self.filetype_combo.GetValue()=='txt')
 							wx.PostEvent(self.confirm_button, wx.PyCommandEvent(wx.EVT_BUTTON.typeId, self.confirm_button.GetId()))
 
+	def MoveCategory(self, evt):
+		new_category = self.category_menu.FindItemById(evt.GetId()).GetText()
+		board_node = self.dir_tree.GetItemParent(self.dir_tree.GetItemParent(self.selected_item))
+		name = self.dir_tree.GetItemText(self.selected_item)
+		old_path = self.dir_tree.GetItemData(self.dir_tree.GetItemParent(self.selected_item)).GetData().path
+		category, cookie = self.dir_tree.GetFirstChild(board_node)
+		while category.IsOk():
+			if self.dir_tree.GetItemText(category) == new_category:
+				self.dir_tree.Delete(self.selected_item)
+				new_node = self.InsertNode(category, name)
+				self.dir_tree.Expand(category)
+				break
+			category, cookie = self.dir_tree.GetNextChild(board_node, cookie)
+		new_path = self.dir_tree.GetItemData(self.dir_tree.GetItemParent(new_node)).GetData().path
+
+
+		try:
+			id=re.search(r'^\[(\d+)\].*\.(html|txt)$',name).group(1)
+			another_old_path = os.path.join(old_path,'images',id).decode(sys.getdefaultencoding())
+			another_new_path = os.path.join(new_path,'images',id).decode(sys.getdefaultencoding())
+			if os.path.isdir(another_old_path):
+				if os.path.isdir(another_new_path):
+					send2trash(another_new_path)
+				shutil.move(another_old_path, another_new_path)
+				wx.PostEvent(self, OutputEvent('移动: ' + another_old_path + ' -> ' + another_new_path + ' 成功'))
+				if len(os.listdir(os.path.join(old_path, 'images'))) == 0:
+					wx.PostEvent(self, OutputEvent('删除空文件夹: ' + os.path.join(old_path, 'images')))
+					send2trash(os.path.join(old_path, 'images'))
+
+			another_old_path = re.sub('html$', 'txt', os.path.join(old_path,name))
+			another_new_path = re.sub('html$', 'txt', os.path.join(new_path,name))
+			if os.path.isfile(another_old_path):
+				shutil.move(another_old_path, another_new_path)
+				wx.PostEvent(self, OutputEvent('移动: ' + another_old_path + ' -> ' + another_new_path + ' 成功'))
+			another_old_path = re.sub('txt$', 'html', os.path.join(old_path,name))
+			another_new_path = re.sub('txt$', 'html', os.path.join(new_path,name))
+			if os.path.isfile(another_old_path):
+				shutil.move(another_old_path, another_new_path)
+				wx.PostEvent(self, OutputEvent('移动: ' + another_old_path + ' -> ' + another_new_path + ' 成功'))
+		except Exception as e:
+			wx.PostEvent(self, OutputEvent('错误: 移动分类时发生错误!'))
+			wx.PostEvent(self, OutputEvent(traceback.format_exc().decode(sys.getdefaultencoding())))
+			self.RecreateTree()
 
 
 	def OnTreeNodeRightClick(self, evt):
@@ -883,6 +931,23 @@ class MainWindow(wx.Frame):
 				self.dir_popupmenu.GetMenuItems()[2].Enable(True)
 			self.PopupMenu(self.dir_popupmenu)
 		else:
+			for item in self.category_menu.GetMenuItems():
+				self.category_menu.DeleteItem(item)
+			category_node = self.dir_tree.GetItemParent(self.selected_item)
+			board_node = self.dir_tree.GetItemParent(category_node)
+			category, cookie = self.dir_tree.GetFirstChild(board_node)
+			count = 0
+			while category.IsOk():
+				if  category != category_node:
+					item = self.category_menu.Append(-1, self.dir_tree.GetItemText(category))
+					self.Bind(wx.EVT_MENU , self.MoveCategory, item)
+					count = count + 1
+				category, cookie = self.dir_tree.GetNextChild(board_node, cookie)
+
+			if count == 0:
+				item = self.category_menu.Append(-1, '无可用分类')
+				item.Enable(False)
+
 			for item in self.file_popupmenu.GetMenuItems():
 				if item.GetText() == '刷新(存贴时不可用)':
 					item.Enable(self.worker is None or self.worker._working == 0)
@@ -910,7 +975,7 @@ class MainWindow(wx.Frame):
 					if os.path.exists(os.path.join(uncatedir, i)):
 						send2trash(os.path.join(uncatedir, i))
 					shutil.move(tmpdir, os.path.join(uncatedir, i))
-					wx.PostEvent(self, OutputEvent('移动: ' + tmpdir + ' -> ' + os.path.join(uncatedir, i)))
+					wx.PostEvent(self, OutputEvent('移动: ' + tmpdir + ' -> ' + os.path.join(uncatedir, i) + ' 成功'))
 				else:
 					for subfolder in os.listdir(tmpdir):
 						childdir = os.path.join(tmpdir, subfolder)
@@ -919,7 +984,7 @@ class MainWindow(wx.Frame):
 								send2trash(os.path.join(uncatedir, i))
 								os.makedirs(os.path.join(uncatedir,i))
 							shutil.move(childdir, os.path.join(uncatedir, i))
-							wx.PostEvent(self, OutputEvent('移动: ' + childdir + ' -> ' + os.path.join(uncatedir, i)))
+							wx.PostEvent(self, OutputEvent('移动: ' + childdir + ' -> ' + os.path.join(uncatedir, i)+ ' 成功'))
 					if len(os.listdir(tmpdir)) == 0:
 						wx.PostEvent(self, OutputEvent('删除空文件夹: ' + tmpdir))
 						send2trash(tmpdir)
