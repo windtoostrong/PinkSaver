@@ -115,7 +115,7 @@ class WorkerThread(Thread):
 			if self._want_abort:
 				self.stop()
 				return
-			url, current_page, end_page, ans = f.pop()
+			page_url, current_page, end_page, ans = f.pop()
 			if isinstance(ans, Exception):
 				raise ans
 
@@ -224,26 +224,22 @@ class WorkerThread(Thread):
 						self.stop()
 						return
 				src, replaced_url, suffix, ans = f.pop()
-				if isinstance(ans, URLError)  or isinstance(ans, socket.error):
+				if isinstance(ans, Exception):
 					self.output('错误: 下载图片' + src + '时发生错误！')
 					image_table[src] = '-1'
-				else:
-					if isinstance(ans, Exception):
-						self.output('错误: 下载图片' + src + '时发生错误！')
+				else:	
+					try:
+						single_image_path = os.path.join('小粉红存档', '['+params.get('board')[0]+ ']', category, replaced_url).decode(sys.getdefaultencoding())
+						image_file= open(single_image_path,'wb')
+						image_file.write(ans)
+						image_file.close()
+					except Exception as e:
+						self.output(traceback.format_exc().decode(sys.getdefaultencoding()))
 						image_table[src] = '-1'
+						self.output('错误: 保存图片' + src + '时发生错误！')
 					else:
-						try:
-							single_image_path = os.path.join('小粉红存档', '['+params.get('board')[0]+ ']', category, replaced_url).decode(sys.getdefaultencoding())
-							image_file= open(single_image_path,'wb')
-							image_file.write(ans)
-							image_file.close()
-						except Exception as e:
-							self.output(traceback.format_exc().decode(sys.getdefaultencoding()))
-							image_table[src] = '-1'
-							self.output('错误: 保存图片' + src + '时发生错误！')
-						else:
-							image_table[src] = replaced_url
-							self.output('成功: 保存图片' + src)
+						image_table[src] = replaced_url
+						self.output('成功: 保存图片' + src)
 
 			for img_node in full_tree.xpath('//img[@src]'):
 				src = img_node.get('src')
@@ -733,7 +729,7 @@ class MainWindow(wx.Frame):
 			self.RefreshTreeAfterDownload(item, board, category, name, depth+1)
 		if parent_data.depth == 2:
 			item = self.InsertNode(parent, name)
-		
+
 		if parent_data.depth>0:
 			self.dir_tree.Expand(parent)
 		
@@ -741,7 +737,6 @@ class MainWindow(wx.Frame):
 	def InsertNode(self, root, name):
 		root_data = self.dir_tree.GetItemData(root).GetData()
 		index = -1;
-		inserted = False
 
 		if root_data.depth == 0:
 			board = re.search(r'^\[(\d+)\]', name).group(1)
@@ -756,12 +751,18 @@ class MainWindow(wx.Frame):
 		while item.IsOk():
 			index = index+1
 			if self.dir_tree.GetItemText(item) == name:
+				if root_data.depth == 2:
+					self.dir_tree.SelectItem(item)
 				return item
 			if self.dir_tree.GetItemText(item) > name:
-				return self.dir_tree.InsertItemBefore(parent=root, index=index, text=name, data=data)
+				item = self.dir_tree.InsertItemBefore(parent=root, index=index, text=name, data=data)
+				self.dir_tree.SelectItem(item)
+				return item
 			item, cookie = self.dir_tree.GetNextChild(root, cookie)
 
-		return self.dir_tree.AppendItem(parent=root, text=name, data=data)
+		item = self.dir_tree.AppendItem(parent=root, text=name, data=data)
+		self.dir_tree.SelectItem(item)
+		return item
 
 
 
@@ -886,11 +887,11 @@ class MainWindow(wx.Frame):
 			if self.dir_tree.GetItemText(category) == new_category:
 				self.dir_tree.Delete(self.selected_item)
 				new_node = self.InsertNode(category, name)
+				self.dir_tree.SelectItem(new_node)
 				self.dir_tree.Expand(category)
 				break
 			category, cookie = self.dir_tree.GetNextChild(board_node, cookie)
 		new_path = self.dir_tree.GetItemData(self.dir_tree.GetItemParent(new_node)).GetData().path
-
 
 		try:
 			id=re.search(r'^\[(\d+)\].*\.(html|txt)$',name).group(1)
