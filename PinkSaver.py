@@ -477,7 +477,7 @@ class WorkerThread(Thread):
 					return (self._single_page_type, category_from_url, new_url)
 			else:
 				if result.path == '/board.php':
-					if params.get('board') is None or params.get('page') is None or not re.match(r'^\d+$', params.get('board')[0]) or not re.match(r'^\d+$', params.get('page')[0]):
+					if params.get('board') is None or not re.match(r'^\d+$', params.get('board')[0]) or ((params.get('page') is not None) and not re.match(r'^\d+$', params.get('page')[0])):
 						return (self._invalid_page_type, category_from_url, url)
 					else:
 						return (self._board_page_type, category_from_url, url)
