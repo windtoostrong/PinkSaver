@@ -1016,6 +1016,9 @@ class MainWindow(wx.Frame):
 				self.dir_popupmenu.GetMenuItems()[3].Enable(False)
 			else:
 				self.dir_popupmenu.GetMenuItems()[3].Enable(True)
+			for item in self.dir_popupmenu.GetMenuItems():
+				if item.GetText() == '刷新(存贴时不可用)':
+					item.Enable(self.worker is None or self.worker._working == 0)
 			self.PopupMenu(self.dir_popupmenu)
 		else:
 			for item in self.category_menu.GetMenuItems():
