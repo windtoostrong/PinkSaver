@@ -772,7 +772,10 @@ class MainWindow(wx.Frame):
 			index = index+1
 			if self.dir_tree.GetItemText(item) == name:
 				if root_data.depth == 2:
-					self.dir_tree.SelectItem(item)
+					self.dir_tree.SelectItem(item)s
+				return (False, item)
+			elif root_data.depth == 2 and re.search(r'^\[(\d+)\]', name).group(1) == re.search(r'^\[(\d+)\]', self.dir_tree.GetItemText(item)).group(1):
+				self.dir_tree.SelectItem(item)
 				return (False, item)
 			if self.dir_tree.GetItemText(item) > name:
 				item = self.dir_tree.InsertItemBefore(parent=root, index=index, text=name, data=data)
