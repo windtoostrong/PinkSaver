@@ -22,20 +22,19 @@ from threading import Thread, Lock
 from Queue import Queue
 import html2text
 import shutil
-import platform
 import socket
 from send2trash import send2trash
 try:
-    dirName = os.path.dirname(os.path.abspath(__file__))
+	dirName = os.path.dirname(os.path.abspath(__file__))
 except:
-    dirName = os.path.dirname(os.path.abspath(sys.argv[0]))
+	dirName = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 sys.path.append(os.path.split(dirName)[0])
 
 try:
-    from agw import hyperlink as hl
+	from agw import hyperlink as hl
 except ImportError: # if it's not there locally, try the wxPython lib.
-    import wx.lib.agw.hyperlink as hl
+	import wx.lib.agw.hyperlink as hl
 #global variable
 global body_index, full_tree, f
 
@@ -851,7 +850,11 @@ class MainWindow(wx.Frame):
 		else:
 			if text == '打开':
 				try:
-					os.startfile(data.path)
+					if sys.platform == "win32":
+						os.startfile(data.path)
+					else:
+						opener ="open" if sys.platform == "darwin" else "xdg-open"
+						subprocess.call([opener, data.path])
 				except Exception as e:
 					wx.PostEvent(self, OutputEvent('打开: ' + data.path + '时发生错误！'))
 				else:
@@ -882,7 +885,11 @@ class MainWindow(wx.Frame):
 				else:
 					if text == '打开原帖':
 						try:
-							os.startfile(data.url)
+							if sys.platform == "win32":
+								os.startfile(data.url)
+							else:
+								opener ="open" if sys.platform == "darwin" else "xdg-open"
+								subprocess.call([opener, data.url])
 						except Exception as e:
 							wx.PostEvent(self, OutputEvent('打开: ' + data.url + '时发生错误！'))
 						else:
@@ -1098,7 +1105,11 @@ class MainWindow(wx.Frame):
 	def OnTreeNodeDoubleClick(self, evt):
 		item = evt.GetItem()
 		path = self.GetCurrentPath(item)
-		os.startfile(path)
+		if sys.platform == "win32":
+			os.startfile(path)
+		else:
+			opener ="open" if sys.platform == "darwin" else "xdg-open"
+			subprocess.call([opener, path])
 
 	def OnStart(self, evt):
 		self.input_text.Disable()
@@ -1148,8 +1159,9 @@ if __name__=='__main__':
 	global f
 	f = Fetcher(threads=10)
 	app = MainApp(0)
-	(bit, ostype) = platform.architecture()
-	if re.match('^Windows', ostype):
+
+	#try to kill the process on windows
+	if sys.platform == "win32":
 		import win32com.client
 		proc_name = sys.argv[0]
 		proc_name = proc_name.split('\\')[-1]
