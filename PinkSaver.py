@@ -772,8 +772,9 @@ class MainWindow(wx.Frame):
 			index = index+1
 			if self.dir_tree.GetItemText(item) == name:
 				if root_data.depth == 2:
-					self.dir_tree.SelectItem(item)s
+					self.dir_tree.SelectItem(item)
 				return (False, item)
+			# some korean character special handling
 			elif root_data.depth == 2 and re.search(r'^\[(\d+)\]', name).group(1) == re.search(r'^\[(\d+)\]', self.dir_tree.GetItemText(item)).group(1):
 				self.dir_tree.SelectItem(item)
 				return (False, item)
