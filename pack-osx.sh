@@ -1,1 +1,1 @@
-pyinstaller  --icon xq.ico PinkSaver.py --console --onefile
+pyinstaller  --icon xq.ico PinkSaver.py --window --onefile
