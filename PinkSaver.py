@@ -617,7 +617,7 @@ class Fetcher:
 			with self.lock:
 				self.running += 1
 			try:
-				ans = self.opener.open(param.get('url'), timeout=10).read()
+				ans = self.opener.open(param.get('url'), timeout=30).read()
 			except Exception as e:
 				self.q_ans.put((param.get('url'), param.get('current_page'), param.get('end_page'), e))
 			else:	
