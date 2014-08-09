@@ -667,8 +667,7 @@ class MainWindow(wx.Frame):
 		self.txt_checkbox = wx.CheckBox(self, -1, label='存为txt')
 		
 		application_path = os.path.dirname(os.path.dirname(sys.argv[0])) or os.path.dirname(os.path.abspath(__file__))
-		self.dir_path = os.path.join(application_path, '小粉红存档').decode(sys.getdefaultencoding())
-		print self.dir_path
+		self.dir_path = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), '小粉红存档').decode(sys.getdefaultencoding())
 		self.search_box = wx.SearchCtrl(self, -1, style=wx.TE_PROCESS_ENTER)
 		self.search_text = ''
 		self.filetype_combo= wx.ComboBox(self, -1, value = "html", choices = ['html', 'txt'], style = wx.CB_DROPDOWN)
