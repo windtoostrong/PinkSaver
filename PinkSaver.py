@@ -20,9 +20,9 @@ from urllib2 import URLError
 from lxml import etree
 from threading import Thread, Lock
 from Queue import Queue
-import win32com.client
 import html2text
 import shutil
+import platform
 import socket
 from send2trash import send2trash
 try:
@@ -1148,18 +1148,21 @@ if __name__=='__main__':
 	global f
 	f = Fetcher(threads=10)
 	app = MainApp(0)
-	proc_name = sys.argv[0]
-	proc_name = proc_name.split('\\')[-1]
-	#print proc_name
-	my_pid = os.getpid()
+	(bit, ostype) = platform.architecture()
+	if re.match('^Windows', ostype):
+		import win32com.client
+		proc_name = sys.argv[0]
+		proc_name = proc_name.split('\\')[-1]
+		#print proc_name
+		my_pid = os.getpid()
 
-	wmi = win32com.client.GetObject('winmgmts:')
-	all_procs = wmi.InstancesOf('Win32_Process')
+		wmi = win32com.client.GetObject('winmgmts:')
+		all_procs = wmi.InstancesOf('Win32_Process')
 
-	for proc in all_procs:
-		if proc.Properties_("Name").Value == proc_name:
-			proc_pid = proc.Properties_("ProcessID").Value
-			if proc_pid != my_pid:
-				os.kill(proc_pid, 9)
+		for proc in all_procs:
+			if proc.Properties_("Name").Value == proc_name:
+				proc_pid = proc.Properties_("ProcessID").Value
+				if proc_pid != my_pid:
+					os.kill(proc_pid, 9)
 	app.MainLoop()
 	
