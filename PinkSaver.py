@@ -159,7 +159,7 @@ class WorkerThread(Thread):
 			page_node.attrib['id'] = 'pager_top ' + str(index)
 			index = index + 1
 
-		subpath = os.path.join('小粉红存档', '['+params.get('board')[0 ]+ ']', category)
+		subpath = os.path.join(self._notify_window.dir_path, '['+params.get('board')[0 ]+ ']', category)
 		path = subpath.decode(sys.getdefaultencoding())
 		if not os.path.isdir(path):
 			os.makedirs(path)
@@ -172,7 +172,7 @@ class WorkerThread(Thread):
 			self.stop()
 			return None
 			
-		image_path = os.path.join('小粉红存档', '['+params.get('board')[0 ]+ ']', category, 'images', params.get('id')[0]).decode(sys.getdefaultencoding())
+		image_path = os.path.join(self._notify_window.dir_path, '['+params.get('board')[0 ]+ ']', category, 'images', params.get('id')[0]).decode(sys.getdefaultencoding())
 		if os.path.isfile(full_path):
 			download_html = True
 		
@@ -221,7 +221,7 @@ class WorkerThread(Thread):
 					return
 				if image_table.get(src) == '0':
 					replaced_url = os.path.join('images', params.get('id')[0], hashlib.md5(src).hexdigest() + '.' + suffix_table[src])
-					single_image_path = os.path.join('小粉红存档', '['+params.get('board')[0 ]+ ']', category, replaced_url).decode(sys.getdefaultencoding())
+					single_image_path = os.path.join(self._notify_window.dir_path, '['+params.get('board')[0 ]+ ']', category, replaced_url).decode(sys.getdefaultencoding())
 					#print single_image_path
 					if os.path.isfile(single_image_path) and os.path.getsize(single_image_path) > 0:
 						image_table[src] = replaced_url
@@ -239,7 +239,7 @@ class WorkerThread(Thread):
 					image_table[src] = '-1'
 				else:	
 					try:
-						single_image_path = os.path.join('小粉红存档', '['+params.get('board')[0]+ ']', category, replaced_url).decode(sys.getdefaultencoding())
+						single_image_path = os.path.join(self._notify_window.dir_path, '['+params.get('board')[0]+ ']', category, replaced_url).decode(sys.getdefaultencoding())
 						image_file= open(single_image_path,'wb')
 						image_file.write(ans)
 						image_file.close()
