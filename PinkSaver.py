@@ -507,10 +507,16 @@ class WorkerThread(Thread):
 		category = category.strip(' \t\n\r')
 		category = '无分类' if category == '' else category
 
+		if re.search(r'[\/\\\:\*\?\"\<\>\|]', category):
+			self.output('分类非法: ' + category)
+			self.output('')
+			return 0;
+
 		if type == self._invalid_page_type:
 			self.output('地址非法: ' + url)
 			self.output('')
 			return 0;
+
 		
 		try:		
 			if type == self._single_page_type:
@@ -549,7 +555,7 @@ class WorkerThread(Thread):
 		self._want_abort = 0 
 		self._want_abort_out = 0
 		
-		if re.match(r'[\/\\\:\*\?\"\<\>\|]', self._notify_window.category_text_input.GetValue()):
+		if re.search(r'[\/\\\:\*\?\"\<\>\|]', self._notify_window.category_text_input.GetValue()):
 			wx.MessageBox('分类中不能包含如下字符 / \ : * ? " < > |')
 		else:
 			# clear the exiting queue
@@ -678,7 +684,7 @@ class MainWindow(wx.Frame):
 			item = self.file_popupmenu.Append(-1, text)
 			self.Bind(wx.EVT_MENU , self.OnPopupItemSelected, item)
 		self.dir_popupmenu = wx.Menu()
-		for text in "打开 删除 新建分类".split():
+		for text in "刷新(存贴时不可用) 打开 删除 新建分类".split():
 			item = self.dir_popupmenu.Append(-1, text)
 			self.Bind(wx.EVT_MENU , self.OnPopupItemSelected, item)
 		self.category_menu = wx.Menu()
@@ -858,7 +864,7 @@ class MainWindow(wx.Frame):
 					if dlg.ShowModal() == wx.ID_OK:
 						new_category = dlg.GetValue()
 						new_category = new_category.strip(' \t\n\r')
-						if new_category == '' or re.match(r'[\/\\\:\*\?\"\<\>\|]', new_category) :
+						if new_category == '' or re.search(r'[\/\\\:\*\?\"\<\>\|]', new_category) :
 							wx.MessageBox('新建分类不能为空且不能包含如下字符 / \ : * ? " < > |' )
 							return
 						(inserted, new_node) = self.InsertNode(self.selected_item, new_category)
@@ -884,7 +890,25 @@ class MainWindow(wx.Frame):
 						wx.PostEvent(self, OutputEvent(''))
 					else:
 						if text == '刷新(存贴时不可用)':
-							self.input_text.SetValue(data.url)
+							if data.depth == 3:
+								self.input_text.SetValue(data.url)
+							else:
+								self.input_text.SetValue('')
+								if data.depth == 2:
+									child, cookie = self.dir_tree.GetFirstChild(self.selected_item)
+									while child.IsOk():
+										self.input_text.AppendText(self.dir_tree.GetItemData(child).GetData().url)
+										self.input_text.AppendText("\n")
+										child, cookie = self.dir_tree.GetNextChild(self.selected_item, cookie)
+								if data.depth == 1:
+									child, cookie = self.dir_tree.GetFirstChild(self.selected_item)
+									while child.IsOk():
+										grandchild, childcookie = self.dir_tree.GetFirstChild(child)
+										while grandchild.IsOk():
+											self.input_text.AppendText(self.dir_tree.GetItemData(grandchild).GetData().url)
+											self.input_text.AppendText("\n")
+											grandchild, childcookie = self.dir_tree.GetNextChild(child, childcookie)
+										child, cookie = self.dir_tree.GetNextChild(self.selected_item, cookie)
 							self.html_checkbox.SetValue(self.filetype_combo.GetValue()=='html')
 							self.txt_checkbox.SetValue(self.filetype_combo.GetValue()=='txt')
 							wx.PostEvent(self.confirm_button, wx.PyCommandEvent(wx.EVT_BUTTON.typeId, self.confirm_button.GetId()))
@@ -982,9 +1006,9 @@ class MainWindow(wx.Frame):
 		data = self.dir_tree.GetItemData(self.selected_item).GetData()
 		if data.depth < 3:
 			if self.dir_tree.GetItemParent(self.selected_item) != self.dir_tree_root:
-				self.dir_popupmenu.GetMenuItems()[2].Enable(False)
+				self.dir_popupmenu.GetMenuItems()[3].Enable(False)
 			else:
-				self.dir_popupmenu.GetMenuItems()[2].Enable(True)
+				self.dir_popupmenu.GetMenuItems()[3].Enable(True)
 			self.PopupMenu(self.dir_popupmenu)
 		else:
 			for item in self.category_menu.GetMenuItems():
