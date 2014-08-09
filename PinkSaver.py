@@ -830,7 +830,7 @@ class MainWindow(wx.Frame):
 						send2trash(data.path)
 						wx.PostEvent(self, OutputEvent('删除: ' + data.path + '成功'))
 						id=re.search(r'^\[(\d+)\].*\.(html|txt)$',self_text).group(1)
-						image_path = os.path.join(data.path,'..','images',id).decode(sys.getdefaultencoding())
+						image_path = os.path.join(os.path.dirname(data.path),'images', id).decode(sys.getdefaultencoding())
 						if os.path.isdir(image_path):
 							send2trash(image_path)
 							wx.PostEvent(self, OutputEvent('删除: ' + image_path + '成功'))
