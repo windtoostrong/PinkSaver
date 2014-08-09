@@ -23,6 +23,7 @@ from Queue import Queue
 import html2text
 import shutil
 import socket
+import subprocess
 from send2trash import send2trash
 try:
 	dirName = os.path.dirname(os.path.abspath(__file__))
