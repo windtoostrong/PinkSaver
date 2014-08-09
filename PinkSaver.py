@@ -476,20 +476,18 @@ class WorkerThread(Thread):
 					parsed_url[5] = ''
 					new_url = urlunparse(parsed_url)
 					return (self._single_page_type, category_from_url, new_url)
-			else:
-				if result.path == '/board.php':
+			elif result.path == '/board.php':
 					if params.get('board') is None or not re.match(r'^\d+$', params.get('board')[0]) or ((params.get('page') is not None) and not re.match(r'^\d+$', params.get('page')[0])):
 						return (self._invalid_page_type, category_from_url, url)
 					else:
 						return (self._board_page_type, category_from_url, url)
-				else:
-					if result.path == '/search.php':
-						if params.get('board') is None or not re.match(r'^\d+$', params.get('board')[0]) or (params.get('page') is not None and not re.match(r'^\d+$', params.get('page')[0])) or params.get('topic') is None or not re.match(r'^\d+$', params.get('topic')[0]) or params.get('act') is None or params.get('act')[0] != 'search' or params.get('keyword') is None:
-							return (self._invalid_page_type, category_from_url, url)
-						else:
-							return (self._search_page_type, category_from_url, url)
-					else:
+			elif result.path == '/search.php':
+					if params.get('board') is None or not re.match(r'^\d+$', params.get('board')[0]) or (params.get('page') is not None and not re.match(r'^\d+$', params.get('page')[0])) or params.get('topic') is None or not re.match(r'^\d+$', params.get('topic')[0]) or params.get('act') is None or params.get('act')[0] != 'search' or params.get('keyword') is None:
 						return (self._invalid_page_type, category_from_url, url)
+					else:
+						return (self._search_page_type, category_from_url, url)
+			else:
+				return (self._invalid_page_type, category_from_url, url)
 	
 		
 	def main_handler(self, url, category, download_html, download_image, download_txt):
@@ -668,7 +666,9 @@ class MainWindow(wx.Frame):
 		self.image_checkbox = wx.CheckBox(self, -1, label='下载图片')
 		self.txt_checkbox = wx.CheckBox(self, -1, label='存为txt')
 		
-		self.dir_path = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), '小粉红存档').decode(sys.getdefaultencoding())
+		application_path = os.path.dirname(os.path.dirname(sys.argv[0])) or os.path.dirname(os.path.abspath(__file__))
+		self.dir_path = os.path.join(application_path, '小粉红存档').decode(sys.getdefaultencoding())
+		print self.dir_path
 		self.search_box = wx.SearchCtrl(self, -1, style=wx.TE_PROCESS_ENTER)
 		self.search_text = ''
 		self.filetype_combo= wx.ComboBox(self, -1, value = "html", choices = ['html', 'txt'], style = wx.CB_DROPDOWN)
@@ -745,10 +745,10 @@ class MainWindow(wx.Frame):
 		if parent_data.depth == 0:
 			(inserted, item) = self.InsertNode(parent, board)
 			self.RefreshTreeAfterDownload(item, board, category, name, depth+1)
-		if parent_data.depth == 1:
+		elif parent_data.depth == 1:
 			(inserted, item) = self.InsertNode(parent, category)
 			self.RefreshTreeAfterDownload(item, board, category, name, depth+1)
-		if parent_data.depth == 2:
+		elif parent_data.depth == 2:
 			(inserted, item) = self.InsertNode(parent, name)
 
 		if parent_data.depth>0:
@@ -762,9 +762,9 @@ class MainWindow(wx.Frame):
 		if root_data.depth == 0:
 			board = re.search(r'^\[(\d+)\]', name).group(1)
 			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + 'board='+board, os.path.join(root_data.path, name), root_data.depth+1))
-		if root_data.depth == 1:
+		elif root_data.depth == 1:
 			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + '#category='+name, os.path.join(root_data.path, name), root_data.depth+1))
-		if root_data.depth == 2:
+		elif root_data.depth == 2:
 			id = re.search(r'^\[(\d+)\]',name).group(1)
 			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url.replace('#category','&id='+id+'#category'), os.path.join(root_data.path, name), root_data.depth+1))
 
@@ -861,8 +861,7 @@ class MainWindow(wx.Frame):
 				else:
 					wx.PostEvent(self, OutputEvent('打开: ' + data.path + '成功'))
 				wx.PostEvent(self, OutputEvent(''))
-			else: 
-				if text == '新建分类':
+			elif text == '新建分类':
 					dlg = wx.TextEntryDialog(self, '请输入新建分类的名字','= =', 'Python')
 					dlg.SetValue('无分类')
 					if dlg.ShowModal() == wx.ID_OK:
@@ -883,43 +882,41 @@ class MainWindow(wx.Frame):
 							self.RecreateTree()
 						else:
 							wx.PostEvent(self, OutputEvent('成功: 创建目录 ' + data.path))
-				else:
-					if text == '打开原帖':
-						try:
-							if sys.platform == "win32":
-								os.startfile(data.url)
-							else:
-								opener ="open" if sys.platform == "darwin" else "xdg-open"
-								subprocess.call([opener, data.url])
-						except Exception as e:
-							wx.PostEvent(self, OutputEvent('打开: ' + data.url + '时发生错误！'))
+			elif text == '打开原帖':
+					try:
+						if sys.platform == "win32":
+							os.startfile(data.url)
 						else:
-							wx.PostEvent(self, OutputEvent('打开: ' + data.url + '成功'))
-						wx.PostEvent(self, OutputEvent(''))
+							opener ="open" if sys.platform == "darwin" else "xdg-open"
+							subprocess.call([opener, data.url])
+					except Exception as e:
+						wx.PostEvent(self, OutputEvent('打开: ' + data.url + '时发生错误！'))
 					else:
-						if text == '刷新(存贴时不可用)':
-							if data.depth == 3:
-								self.input_text.SetValue(data.url)
-							else:
-								self.input_text.SetValue('')
-								if data.depth == 2:
-									child, cookie = self.dir_tree.GetFirstChild(self.selected_item)
-									while child.IsOk():
-										self.input_text.AppendText(self.dir_tree.GetItemData(child).GetData().url)
-										self.input_text.AppendText("\n")
-										child, cookie = self.dir_tree.GetNextChild(self.selected_item, cookie)
-								if data.depth == 1:
-									child, cookie = self.dir_tree.GetFirstChild(self.selected_item)
-									while child.IsOk():
-										grandchild, childcookie = self.dir_tree.GetFirstChild(child)
-										while grandchild.IsOk():
-											self.input_text.AppendText(self.dir_tree.GetItemData(grandchild).GetData().url)
-											self.input_text.AppendText("\n")
-											grandchild, childcookie = self.dir_tree.GetNextChild(child, childcookie)
-										child, cookie = self.dir_tree.GetNextChild(self.selected_item, cookie)
-							self.html_checkbox.SetValue(self.filetype_combo.GetValue()=='html')
-							self.txt_checkbox.SetValue(self.filetype_combo.GetValue()=='txt')
-							wx.PostEvent(self.confirm_button, wx.PyCommandEvent(wx.EVT_BUTTON.typeId, self.confirm_button.GetId()))
+						wx.PostEvent(self, OutputEvent('打开: ' + data.url + '成功'))
+					wx.PostEvent(self, OutputEvent(''))
+			elif text == '刷新(存贴时不可用)':
+					if data.depth == 3:
+						self.input_text.SetValue(data.url)
+					else:
+						self.input_text.SetValue('')
+						if data.depth == 2:
+							child, cookie = self.dir_tree.GetFirstChild(self.selected_item)
+							while child.IsOk():
+								self.input_text.AppendText(self.dir_tree.GetItemData(child).GetData().url)
+								self.input_text.AppendText("\n")
+								child, cookie = self.dir_tree.GetNextChild(self.selected_item, cookie)
+						if data.depth == 1:
+							child, cookie = self.dir_tree.GetFirstChild(self.selected_item)
+							while child.IsOk():
+								grandchild, childcookie = self.dir_tree.GetFirstChild(child)
+								while grandchild.IsOk():
+									self.input_text.AppendText(self.dir_tree.GetItemData(grandchild).GetData().url)
+									self.input_text.AppendText("\n")
+									grandchild, childcookie = self.dir_tree.GetNextChild(child, childcookie)
+								child, cookie = self.dir_tree.GetNextChild(self.selected_item, cookie)
+					self.html_checkbox.SetValue(self.filetype_combo.GetValue()=='html')
+					self.txt_checkbox.SetValue(self.filetype_combo.GetValue()=='txt')
+					wx.PostEvent(self.confirm_button, wx.PyCommandEvent(wx.EVT_BUTTON.typeId, self.confirm_button.GetId()))
 
 	def MoveCategory(self, evt):
 		new_category = self.category_menu.FindItemById(evt.GetId()).GetText()
@@ -1090,11 +1087,10 @@ class MainWindow(wx.Frame):
 						id = re.search(r'^\[(\d+)\]$',i).group(1)
 						child = self.dir_tree.AppendItem(parent = root, text = i, data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + 'board='+id, tmpdir, depth)))
 						self.AddItem(child,tmpdir,depth+1)
-				if depth == 2 and i != 'images':
+				elif depth == 2 and i != 'images':
 					child = self.dir_tree.AppendItem(parent = root, text = i, data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + '#category='+i, tmpdir, depth)))
 					self.AddItem(child,tmpdir,depth+1)
-			else:
-				if depth == 3 and os.path.isfile(tmpdir) and re.match(r'^\[\d+\].*\.'+self.filetype_combo.GetValue()+'$',i) and self.search_text.lower() in i.lower():
+			elif depth == 3 and os.path.isfile(tmpdir) and re.match(r'^\[\d+\].*\.'+self.filetype_combo.GetValue()+'$',i) and self.search_text.lower() in i.lower():
 					id = re.search(r'^\[(\d+)\]',i).group(1)
 					child = self.dir_tree.AppendItem(parent = root, text = i, data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url.replace('#category','&id='+id+'#category'), tmpdir, depth)))
 
