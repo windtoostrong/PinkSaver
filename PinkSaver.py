@@ -963,8 +963,8 @@ class MainWindow(wx.Frame):
 						self.RecreateTree()
 					else:
 						wx.PostEvent(self, OutputEvent('成功: 移动分类!'))
-						self.dir_tree.Delete(self.selected_item)
-						self.dir_tree.SelectItem(new_node)							
+						#self.dir_tree.Delete(self.selected_item)
+						#self.dir_tree.SelectItem(new_node)							
 				else:
 					dlg = wx.MessageDialog(self, '目标文件已存在是否覆盖?', '= =', wx.OK|wx.CANCEL|wx.ICON_QUESTION)
 					result = dlg.ShowModal()
@@ -999,8 +999,8 @@ class MainWindow(wx.Frame):
 							self.RecreateTree()
 						else:
 							wx.PostEvent(self, OutputEvent('成功: 移动分类!'))
-							self.dir_tree.Delete(self.selected_item)
-							self.dir_tree.SelectItem(new_node)
+							#self.dir_tree.Delete(self.selected_item)
+							#self.dir_tree.SelectItem(new_node)
 					else:
 						wx.PostEvent(self, OutputEvent('取消: 移动分类!'))
 						self.dir_tree.SelectItem(self.selected_item)
