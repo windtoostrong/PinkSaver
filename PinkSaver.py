@@ -1122,7 +1122,7 @@ class MainWindow(wx.Frame):
 		self.html_checkbox.Disable()
 		self.image_checkbox.Disable()
 		self.txt_checkbox.Disable()
-		#self.refresh_button.Disable()
+		self.category_text_input.Disable()
 		self.worker = WorkerThread(self)
 	
 	def OnStop(self, evt):
@@ -1143,7 +1143,7 @@ class MainWindow(wx.Frame):
 		self.html_checkbox.Enable()
 		self.image_checkbox.Enable()
 		self.txt_checkbox.Enable()
-		#self.refresh_button.Enable();
+		self.category_text_input.Enable()
 		
 	def OnSize(self, evt):
 		if self.GetAutoLayout():
