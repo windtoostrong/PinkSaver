@@ -617,15 +617,16 @@ class Fetcher:
 			with self.lock:
 				self.running += 1
 			try:
-				ans = self.opener.open(param.get('url'), timeout=30).read()
+				ans = self.opener.open(param.get('url')).read()
 			except Exception as e:
 				self.q_ans.put((param.get('url'), param.get('current_page'), param.get('end_page'), e))
 			else:	
 				self.q_ans.put((param.get('url'), param.get('current_page'), param.get('end_page'), ans))
 			with self.lock:
 				self.running -= 1
+			self.opener.close()
 			self.q_req.task_done()
-			time.sleep(0.1) # don't spam
+			time.sleep(0.5) # don't spam
 
 class TreeItemData:
 	def __init__(self, url, path, depth):
@@ -1160,7 +1161,7 @@ class MainApp(wx.App):
 		
 if __name__=='__main__':
 	global f
-	f = Fetcher(threads=10)
+	f = Fetcher(threads=5)
 	app = MainApp(0)
 
 	#try to kill the process on windows
