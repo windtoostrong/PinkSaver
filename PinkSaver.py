@@ -305,7 +305,7 @@ class WorkerThread(Thread):
 		if self._want_abort:
 			return None
 				
-		code = 'gb2312'
+		code = 'GBK'
 		content = content.decode(code,'ignore')
 		tree = etree.HTML(content)
 		topic = 'dummy'
@@ -314,8 +314,8 @@ class WorkerThread(Thread):
 	
 		if(current_page == 0): 
 			topic = tree.xpath('/html/body/title')[0].text
-			topic = re.sub(u'晋江文学城网友交流区$', '', topic)
-			topic = re.sub(u'―', '', topic)
+			topic = re.sub(u'—— 晋江文学城网友交流区$', '', topic)
+			#topic = re.sub(u'―', '', topic)
 			topic = re.sub(r"[\/\\\:\*\?\"\<\>\|]",'',topic)
 			topic = topic.strip(' \t\n\r')
 			pager = tree.xpath('//*[@id="pager_top"]/a[last()]')
@@ -626,7 +626,7 @@ class Fetcher:
 				self.running -= 1
 			self.opener.close()
 			self.q_req.task_done()
-			time.sleep(0.5) # don't spam
+			time.sleep(0.1) # don't spam
 
 class TreeItemData:
 	def __init__(self, url, path, depth):
@@ -1161,7 +1161,7 @@ class MainApp(wx.App):
 		
 if __name__=='__main__':
 	global f
-	f = Fetcher(threads=5)
+	f = Fetcher(threads=10)
 	app = MainApp(0)
 
 	#try to kill the process on windows
