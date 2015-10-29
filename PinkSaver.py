@@ -313,7 +313,7 @@ class WorkerThread(Thread):
 
 	
 		if(current_page == 0): 
-			topic = tree.xpath('/html/body/title')[0].text
+			topic = tree.xpath('//title')[0].text
 			topic = re.sub(u'—— 晋江文学城网友交流区$', '', topic)
 			#topic = re.sub(u'―', '', topic)
 			topic = re.sub(r"[\/\\\:\*\?\"\<\>\|]",'',topic)
