@@ -313,7 +313,7 @@ class WorkerThread(Thread):
 
 	
 		if(current_page == 0): 
-			topic = tree.xpath('/html/body/title')[0].text
+			topic = tree.xpath('//title')[0].text
 			topic = re.sub(u'—— 晋江文学城网友交流区$', '', topic)
 			#topic = re.sub(u'―', '', topic)
 			topic = re.sub(r"[\/\\\:\*\?\"\<\>\|]",'',topic)
@@ -680,7 +680,7 @@ class MainWindow(wx.Frame):
 		self.RecreateTree()
 		self.selected_item = self.dir_tree.GetRootItem()
 		self.file_popupmenu = wx.Menu()
-		for text in "刷新(存贴时不可用) 打开 删除 打开原帖".split():
+		for text in "刷新(存贴时不可用) 打开 删除 删除某层 打开原帖".split():
 			item = self.file_popupmenu.Append(-1, text)
 			self.Bind(wx.EVT_MENU , self.OnPopupItemSelected, item)
 		self.dir_popupmenu = wx.Menu()
@@ -921,6 +921,29 @@ class MainWindow(wx.Frame):
 					self.html_checkbox.SetValue(self.filetype_combo.GetValue()=='html')
 					self.txt_checkbox.SetValue(self.filetype_combo.GetValue()=='txt')
 					wx.PostEvent(self.confirm_button, wx.PyCommandEvent(wx.EVT_BUTTON.typeId, self.confirm_button.GetId()))
+			elif text == '删除某层':
+					dlg = wx.TextEntryDialog(self, '请输入需要删除的楼层(格式为单个数字或起始-结束,如42或90-100)','= =', 'Python')
+					if dlg.ShowModal() == wx.ID_OK:
+						floors = dlg.GetValue()
+						path = self.dir_tree.GetItemData(self.selected_item).GetData().path
+						wx.PostEvent(self, OutputEvent('文件路径: ' + path))
+						legal = 0
+						if re.match(r'^\d+$', floors):
+							start = int(floors)
+							end = int(floors)
+							legal = 1;
+						elif re.match(r'^(\d+)-(\d+)$', floors):
+							start = int(re.search(r'^(\d+)-(\d+)$', floors).group(1))
+							end = int(re.search(r'^(\d+)-(\d+)$', floors).group(1))
+							legal = 1;
+						
+						if legal == 0  or start == 0 or end == 0:
+							wx.PostEvent(self, OutputEvent('删除楼层: ' + floors + '输入不合法！'))
+						else:
+							tree = etree.parse(path)
+							#№0&nbsp; /html/body/table[2]/tbody/tr[4]/td/div/font[1]
+						wx.PostEvent(self, OutputEvent(''))
+
 
 	def MoveCategory(self, evt):
 		new_category = self.category_menu.FindItemById(evt.GetId()).GetText()
