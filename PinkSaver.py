@@ -314,8 +314,8 @@ class WorkerThread(Thread):
 	
 		if(current_page == 0): 
 			topic = tree.xpath('//title')[0].text
-			topic = re.sub(u'—— 晋江文学城网友交流区$', '', topic)
-			#topic = re.sub(u'―', '', topic)
+			topic = topic.strip()
+			topic = re.sub(u'\n.*', '', topic)
 			topic = re.sub(r"[\/\\\:\*\?\"\<\>\|]",'',topic)
 			topic = topic.strip(' \t\n\r')
 			pager = tree.xpath('//*[@id="pager_top"]/a[last()]')
