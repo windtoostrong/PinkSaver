@@ -11,6 +11,9 @@ import urllib2
 from urlparse import urlparse
 from urlparse import urlunparse
 from urlparse import parse_qs
+import httplib
+httplib.HTTPConnection._http_vsn = 10
+httplib.HTTPConnection._http_vsn_str = 'HTTP/1.0'
 import re
 import traceback
 import requests
