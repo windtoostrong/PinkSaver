@@ -92,7 +92,7 @@ class WorkerThread(Thread):
 		wx.PostEvent(self._notify_window, OutputEvent(str))
 
 	#----------------------------------------------------------------------
-	def handle_single_page(self, url, category, download_html, download_image, download_txt):
+	def handle_single_page(self, url, category, download_html, download_image, download_txt, debug):
 		global body_index, full_tree, f
 		body_index = 0
 		full_tree = etree.HTML('<html><head></head><body bgcolor="#FFE7F7" topmargin="0" screen_capture_injected="true"></body></html>')
@@ -116,6 +116,12 @@ class WorkerThread(Thread):
 				self.output('标题: ' + merge_result.get('topic').decode(sys.getdefaultencoding()))
 				page = int(merge_result.get('page')[0])
 				self.output('一共: '+ str(page+1) + '页')
+				if debug:
+					log_path = os.path.join(self._notify_window.dir_path, 'log.txt')
+					log_file = open(log_path, 'w')
+					log_file.write(ans)
+					log_file.close()
+					self.output("保存日志：" + log_path)
 
 		for i in range(1, page+1):
 			if self._want_abort:
@@ -141,6 +147,8 @@ class WorkerThread(Thread):
 				self.stop()
 				return
 			if temp.get(i) is not None:
+				if debug:
+					self.output("页" + str(temp[i].get('current_page')) + "返回: " + str(temp[i].get('length')))
 				self.merge_single_html(temp[i].get('tree'), temp[i].get('current_page'))
 
 		for page_node in full_tree.xpath('//div[@id="pager_top" or @id="pager_bottom"]/a'):
@@ -307,7 +315,7 @@ class WorkerThread(Thread):
 	def get_single_html(self, url, current_page, end_page, content):
 		if self._want_abort:
 			return None
-				
+		length = len(content)	
 		code = 'GBK'
 		content = content.decode(code,'ignore')
 		tree = etree.HTML(content)
@@ -386,7 +394,7 @@ class WorkerThread(Thread):
 		tree.xpath('/html/body/table[1]/tr[2]/td')[0].insert(5, 
 		etree.fromstring('<a target="_blank" href="' + url + '">'+ '去原帖' +'</a>'))
 
-		return {'topic': topic, 'page': max_page or ['0'], 'tree' : tree, 'current_page': current_page}
+		return {'topic': topic, 'page': max_page or ['0'], 'tree' : tree, 'current_page': current_page, 'length': length}
 
 
 	def merge_single_html(self, tree, current_page):
@@ -429,7 +437,7 @@ class WorkerThread(Thread):
 				full_tree.xpath('/html/body')[0].insert(body_index, node)
 				body_index = body_index + 1
 
-	def handle_search_n_board_page(self, url, category, download_html, download_image, download_txt):
+	def handle_search_n_board_page(self, url, category, download_html, download_image, download_txt, debug):
 		global f
 		for i in range(0, 1):
 			f.push({'url': url, 'current_page': i, 'end_page': i+1})
@@ -450,7 +458,7 @@ class WorkerThread(Thread):
 			href = href_node.get('href')
 			href = 'http://bbs.jjwxc.net/' + href
 			self.output('发现链接: ' + href)
-			self.main_handler(href, category, download_html, download_image, download_txt);
+			self.main_handler(href, category, download_html, download_image, download_txt, debug);
 			self.output('')
 			
 	def get_url_type(self, url):
@@ -493,7 +501,7 @@ class WorkerThread(Thread):
 				return (self._invalid_page_type, category_from_url, url)
 	
 		
-	def main_handler(self, url, category, download_html, download_image, download_txt):
+	def main_handler(self, url, category, download_html, download_image, download_txt, debug):
 		url = url.strip(' \t\n\r')
 		url = url.lower()
 		if (download_html == False and download_txt == False) or url == '':
@@ -522,15 +530,15 @@ class WorkerThread(Thread):
 		try:		
 			if type == self._single_page_type:
 				self.output('类别: 帖子')
-				self.handle_single_page(url, category, download_html, download_image, download_txt)
+				self.handle_single_page(url, category, download_html, download_image, download_txt, debug)
 				self.output('')
 			if type == self._search_page_type:
 				self.output('类别: 搜索')
-				self.handle_search_n_board_page(url, category, download_html, download_image, download_txt)
+				self.handle_search_n_board_page(url, category, download_html, download_image, download_txt, debug)
 				self.output('')
 			if type == self._board_page_type:
 				self.output('类别: 版面')
-				self.handle_search_n_board_page(url, category, download_html, download_image, download_txt)			
+				self.handle_search_n_board_page(url, category, download_html, download_image, download_txt, debug)			
 				self.output('')
 		except URLError as e:
 			self.output('错误: 打开地址发生错误，请检查网络连接是否畅通！')
@@ -566,7 +574,7 @@ class WorkerThread(Thread):
 			for url in self._notify_window.input_text.GetValue().split("\n"):
 				if self._want_abort_out:
 					return
-				self.main_handler(url, self._notify_window.category_text_input.GetValue(), self._notify_window.html_checkbox.GetValue(), self._notify_window.image_checkbox.GetValue(), self._notify_window.txt_checkbox.GetValue())
+				self.main_handler(url, self._notify_window.category_text_input.GetValue(), self._notify_window.html_checkbox.GetValue(), self._notify_window.image_checkbox.GetValue(), self._notify_window.txt_checkbox.GetValue(), self._notify_window.debug_checkbox.GetValue())
 		self.recover()
 
 
@@ -644,15 +652,16 @@ class MainWindow(wx.Frame):
 		self.SetBackgroundColour('#FFE7F7')
 		mainSizer = wx.BoxSizer(wx.HORIZONTAL)
 		leftSizer = wx.BoxSizer(wx.VERTICAL)
-		helpSizer = wx.BoxSizer(wx.HORIZONTAL)
+		debugSizer = wx.BoxSizer(wx.HORIZONTAL)
 		rightSizer = wx.BoxSizer(wx.VERTICAL)
 		btnSizer = wx.BoxSizer(wx.HORIZONTAL)
 		checkSizer = wx.BoxSizer(wx.HORIZONTAL)
 		searchSizer = wx.BoxSizer(wx.HORIZONTAL)
 		
 		self.input_text_label = wx.StaticText(self, -1, '↓支持单个帖子/搜索结果/版面三类地址↓')
-		self.help_label = wx.lib.agw.hyperlink.HyperLinkCtrl(self,-1, '说明&更新&反馈', URL='http://bbs.jjwxc.net/showmsg.php?board=3&id=727804')
-		self.help_label.SetBackgroundColour('#FFE7F7')
+		#self.help_label = wx.lib.agw.hyperlink.HyperLinkCtrl(self,-1, '说明&更新&反馈', URL='http://bbs.jjwxc.net/showmsg.php?board=3&id=727804')
+		#self.help_label.SetBackgroundColour('#FFE7F7')
+		self.debug_checkbox = wx.CheckBox(self, -1, label='调试')
 		self.output_text_label = wx.StaticText(self, -1, '↓随便看不看的结果↓')
 		self.input_text = wx.TextCtrl(self, -1, style = wx.TE_MULTILINE | wx.TE_RICH | wx.TE_PROCESS_ENTER)
 		self.output_text = wx.TextCtrl(self, -1, style = wx.TE_MULTILINE | wx.TE_RICH | wx.TE_READONLY |wx.TE_PROCESS_ENTER) 
@@ -693,9 +702,9 @@ class MainWindow(wx.Frame):
 		self.category_menu = wx.Menu()
 		self.file_popupmenu.AppendMenu(-1,'移动至其他分类', self.category_menu)
 
-		helpSizer.Add(self.input_text_label, 1, wx.RIGHT, border=5)
-		helpSizer.Add(self.help_label, 0)
-		leftSizer.Add(helpSizer,1,wx.CENTER)
+		debugSizer.Add(self.input_text_label, 1, wx.RIGHT, border=5)
+		debugSizer.Add(self.debug_checkbox, 0)
+		leftSizer.Add(debugSizer,1,wx.CENTER)
 		leftSizer.Add(self.input_text, 6, wx.EXPAND)
 		
 		btnSizer.Add(self.clear_button,1, wx.LEFT|wx.RIGHT, border=5)
@@ -808,7 +817,7 @@ class MainWindow(wx.Frame):
 			self.image_checkbox.Disable()
 		else:
 			self.image_checkbox.Enable()
-			
+
 	def OnFiletypeChange(self, evt):
 		self.RecreateTree()
 		
