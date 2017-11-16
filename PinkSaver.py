@@ -7,19 +7,16 @@ sys.setdefaultencoding( "utf-8" )
 import os
 import wx
 import wx.gizmos
-import urllib2
 from urlparse import urlparse
 from urlparse import urlunparse
 from urlparse import parse_qs
-import httplib
-httplib.HTTPConnection._http_vsn = 10
-httplib.HTTPConnection._http_vsn_str = 'HTTP/1.0'
+import requests
+from requests import ConnectionError
 import re
 import traceback
 import requests
 import time
 import hashlib
-from urllib2 import URLError
 from lxml import etree
 from threading import Thread, Lock
 from Queue import Queue
@@ -116,12 +113,12 @@ class WorkerThread(Thread):
 				self.output('标题: ' + merge_result.get('topic').decode(sys.getdefaultencoding()))
 				page = int(merge_result.get('page')[0])
 				self.output('一共: '+ str(page+1) + '页')
-				if debug:
-					log_path = os.path.join(self._notify_window.dir_path, 'log.txt')
-					log_file = open(log_path, 'w')
-					log_file.write(ans)
-					log_file.close()
-					self.output("保存日志：" + log_path)
+				#if debug:
+					#log_path = os.path.join(self._notify_window.dir_path, 'log.txt')
+					#log_file = open(log_path, 'w')
+					#log_file.write(ans)
+					#log_file.close()
+					#self.output("保存日志：" + log_path)
 
 		for i in range(1, page+1):
 			if self._want_abort:
@@ -326,6 +323,7 @@ class WorkerThread(Thread):
 		if(current_page == 0): 
 			topic = tree.xpath('//title')[0].text
 			topic = topic.strip()
+			topic = re.sub(r'\s+[^\s]+\s+[^\s]+$', '', topic)
 			topic = re.sub(u'\n.*', '', topic)
 			topic = re.sub(r"[\/\\\:\*\?\"\<\>\|]",'',topic)
 			topic = topic.strip(' \t\n\r')
@@ -540,7 +538,7 @@ class WorkerThread(Thread):
 				self.output('类别: 版面')
 				self.handle_search_n_board_page(url, category, download_html, download_image, download_txt, debug)			
 				self.output('')
-		except URLError as e:
+		except ConnectionError as e:
 			self.output('错误: 打开地址发生错误，请检查网络连接是否畅通！')
 			self.output(traceback.format_exc().decode(sys.getdefaultencoding()))
 		except socket.error as e:
@@ -597,7 +595,8 @@ class WorkerThread(Thread):
 
 class Fetcher:
 	def __init__(self,threads):
-		self.opener = urllib2.build_opener(urllib2.HTTPHandler)
+		#self.opener = urllib2.build_opener(HTTP10Handler)
+		self.headers = {'Accept-Encoding': 'identity'}
 		self.lock = Lock()
 		self.q_req = Queue()
 		self.q_ans = Queue()
@@ -628,14 +627,15 @@ class Fetcher:
 			with self.lock:
 				self.running += 1
 			try:
-				ans = self.opener.open(param.get('url')).read()
+				#ans = self.opener.open(param.get('url')).read()
+				ans = requests.get(param.get('url', self.headers)).content
 			except Exception as e:
 				self.q_ans.put((param.get('url'), param.get('current_page'), param.get('end_page'), e))
 			else:	
 				self.q_ans.put((param.get('url'), param.get('current_page'), param.get('end_page'), ans))
 			with self.lock:
 				self.running -= 1
-			self.opener.close()
+			#self.opener.close()
 			self.q_req.task_done()
 			time.sleep(0.1) # don't spam
 
