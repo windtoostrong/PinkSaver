@@ -1,1 +1,1 @@
-C:\Python27-32\Scripts\pyinstaller.exe  --icon xq.ico PinkSaver.py --window --onefile
+F:\Python27\Scripts\pyinstaller.exe  --icon xq.ico PinkSaver.py --window --onefile

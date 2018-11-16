@@ -25,6 +25,8 @@ import shutil
 import socket
 import subprocess
 from send2trash import send2trash
+import browsercookie
+
 try:
 	dirName = os.path.dirname(os.path.abspath(__file__))
 except:
@@ -89,7 +91,7 @@ class WorkerThread(Thread):
 		wx.PostEvent(self._notify_window, OutputEvent(str))
 
 	#----------------------------------------------------------------------
-	def handle_single_page(self, url, category, download_html, download_image, download_txt, debug):
+	def handle_single_page(self, url, category, download_html, download_image, download_txt, debug, browser):
 		global body_index, full_tree, f
 		body_index = 0
 		full_tree = etree.HTML('<html><head></head><body bgcolor="#FFE7F7" topmargin="0" screen_capture_injected="true"></body></html>')
@@ -100,7 +102,7 @@ class WorkerThread(Thread):
 		page = 1
 
 		for i in range(0, 1):
-			f.push({'url': url, 'current_page': i, 'end_page': i+1})
+			f.push({'url': url, 'current_page': i, 'end_page': i+1, 'browser': browser})
 
 		for i in range(0, 1):
 			url, current_page, end_page, ans = f.pop()
@@ -125,7 +127,7 @@ class WorkerThread(Thread):
 				self.stop()
 				return
 			page_url = url + '&page=' + str(i)
-			f.push({'url': page_url, 'current_page': i, 'end_page': page})
+			f.push({'url': page_url, 'current_page': i, 'end_page': page, 'browser': browser})
 
 		for i in range(1, page+1):
 			if self._want_abort:
@@ -235,7 +237,7 @@ class WorkerThread(Thread):
 						image_table[src] = replaced_url
 					else:
 						list.append(src)
-						f.push({'url': src, 'current_page': replaced_url, 'end_page': suffix_table[src]})
+						f.push({'url': src, 'current_page': replaced_url, 'end_page': suffix_table[src], 'browser': browser})
 						
 			for element in list:
 				if self._want_abort:
@@ -435,10 +437,10 @@ class WorkerThread(Thread):
 				full_tree.xpath('/html/body')[0].insert(body_index, node)
 				body_index = body_index + 1
 
-	def handle_search_n_board_page(self, url, category, download_html, download_image, download_txt, debug):
+	def handle_search_n_board_page(self, url, category, download_html, download_image, download_txt, debug, browser):
 		global f
 		for i in range(0, 1):
-			f.push({'url': url, 'current_page': i, 'end_page': i+1})
+			f.push({'url': url, 'current_page': i, 'end_page': i+1, 'browser': browser})
 
 		ans = None
 		for i in range(0, 1):
@@ -456,7 +458,7 @@ class WorkerThread(Thread):
 			href = href_node.get('href')
 			href = 'http://bbs.jjwxc.net/' + href
 			self.output('发现链接: ' + href)
-			self.main_handler(href, category, download_html, download_image, download_txt, debug);
+			self.main_handler(href, category, download_html, download_image, download_txt, debug, browser);
 			self.output('')
 			
 	def get_url_type(self, url):
@@ -499,7 +501,7 @@ class WorkerThread(Thread):
 				return (self._invalid_page_type, category_from_url, url)
 	
 		
-	def main_handler(self, url, category, download_html, download_image, download_txt, debug):
+	def main_handler(self, url, category, download_html, download_image, download_txt, debug, browser):
 		url = url.strip(' \t\n\r')
 		url = url.lower()
 		if (download_html == False and download_txt == False) or url == '':
@@ -528,15 +530,15 @@ class WorkerThread(Thread):
 		try:		
 			if type == self._single_page_type:
 				self.output('类别: 帖子')
-				self.handle_single_page(url, category, download_html, download_image, download_txt, debug)
+				self.handle_single_page(url, category, download_html, download_image, download_txt, debug, browser)
 				self.output('')
 			if type == self._search_page_type:
 				self.output('类别: 搜索')
-				self.handle_search_n_board_page(url, category, download_html, download_image, download_txt, debug)
+				self.handle_search_n_board_page(url, category, download_html, download_image, download_txt, debug, browser)
 				self.output('')
 			if type == self._board_page_type:
 				self.output('类别: 版面')
-				self.handle_search_n_board_page(url, category, download_html, download_image, download_txt, debug)			
+				self.handle_search_n_board_page(url, category, download_html, download_image, download_txt, debug, browser)			
 				self.output('')
 		except ConnectionError as e:
 			self.output('错误: 打开地址发生错误，请检查网络连接是否畅通！')
@@ -568,11 +570,11 @@ class WorkerThread(Thread):
 			# clear the exiting queue
 			for i in range(0, f.taskleft()):
 				f.pop()
-				
+			self.output("使用 " + self._notify_window.browser_combobox.GetValue() + "浏览器的cookie, 请确保已登录论坛，否则将只能保存20层！")
 			for url in self._notify_window.input_text.GetValue().split("\n"):
 				if self._want_abort_out:
 					return
-				self.main_handler(url, self._notify_window.category_text_input.GetValue(), self._notify_window.html_checkbox.GetValue(), self._notify_window.image_checkbox.GetValue(), self._notify_window.txt_checkbox.GetValue(), self._notify_window.debug_checkbox.GetValue())
+				self.main_handler(url, self._notify_window.category_text_input.GetValue(), self._notify_window.html_checkbox.GetValue(), self._notify_window.image_checkbox.GetValue(), self._notify_window.txt_checkbox.GetValue(), self._notify_window.debug_checkbox.GetValue(), self._notify_window.browser_combobox.GetValue())
 		self.recover()
 
 
@@ -628,7 +630,14 @@ class Fetcher:
 				self.running += 1
 			try:
 				#ans = self.opener.open(param.get('url')).read()
-				ans = requests.get(param.get('url', self.headers)).content
+				if (param.get('browser') == 'chrome'):
+					cookies = browsercookie.chrome()
+				else:
+					cookies = browsercookie.firefox()
+				if cookies is None:
+					ans = requests.get(param.get('url'), headers=self.headers).content
+				else:
+					ans = requests.get(param.get('url'), cookies=cookies, headers=self.headers).content
 			except Exception as e:
 				self.q_ans.put((param.get('url'), param.get('current_page'), param.get('end_page'), e))
 			else:	
@@ -662,6 +671,8 @@ class MainWindow(wx.Frame):
 		#self.help_label = wx.lib.agw.hyperlink.HyperLinkCtrl(self,-1, '说明&更新&反馈', URL='http://bbs.jjwxc.net/showmsg.php?board=3&id=727804')
 		#self.help_label.SetBackgroundColour('#FFE7F7')
 		self.debug_checkbox = wx.CheckBox(self, -1, label='调试')
+		self.browserList = ['chrome', 'firefox']
+		self.browser_combobox = wx.ComboBox(self, -1, value =  "Chrome", choices = self.browserList, style = wx.CB_READONLY)
 		self.output_text_label = wx.StaticText(self, -1, '↓随便看不看的结果↓')
 		self.input_text = wx.TextCtrl(self, -1, style = wx.TE_MULTILINE | wx.TE_RICH | wx.TE_PROCESS_ENTER)
 		self.output_text = wx.TextCtrl(self, -1, style = wx.TE_MULTILINE | wx.TE_RICH | wx.TE_READONLY |wx.TE_PROCESS_ENTER) 
@@ -700,10 +711,11 @@ class MainWindow(wx.Frame):
 			item = self.dir_popupmenu.Append(-1, text)
 			self.Bind(wx.EVT_MENU , self.OnPopupItemSelected, item)
 		self.category_menu = wx.Menu()
-		self.file_popupmenu.AppendMenu(-1,'移动至其他分类', self.category_menu)
+		self.file_popupmenu.Append(-1,'移动至其他分类', self.category_menu)
 
-		debugSizer.Add(self.input_text_label, 1, wx.RIGHT, border=5)
-		debugSizer.Add(self.debug_checkbox, 0)
+		debugSizer.Add(self.input_text_label, 1, wx.RIGHT, border=3)
+		debugSizer.Add(self.debug_checkbox)
+		debugSizer.Add(self.browser_combobox)
 		leftSizer.Add(debugSizer,1,wx.CENTER)
 		leftSizer.Add(self.input_text, 6, wx.EXPAND)
 		
@@ -750,7 +762,7 @@ class MainWindow(wx.Frame):
 
 
 	def RefreshTreeAfterDownload(self, parent, board, category, name, depth):
-		parent_data = self.dir_tree.GetItemData(parent).GetData()
+		parent_data = self.dir_tree.GetItemData(parent)
 		item, cookie = self.dir_tree.GetFirstChild(parent)
 		item = None
 		# adding category
@@ -768,17 +780,17 @@ class MainWindow(wx.Frame):
 		
 
 	def InsertNode(self, root, name):
-		root_data = self.dir_tree.GetItemData(root).GetData()
+		root_data = self.dir_tree.GetItemData(root)
 		index = -1;
 
 		if root_data.depth == 0:
 			board = re.search(r'^\[(\d+)\]', name).group(1)
-			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + 'board='+board, os.path.join(root_data.path, name), root_data.depth+1))
+			data=TreeItemData(self.dir_tree.GetItemData(root).url + 'board='+board, os.path.join(root_data.path, name), root_data.depth+1)
 		elif root_data.depth == 1:
-			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + '#category='+name, os.path.join(root_data.path, name), root_data.depth+1))
+			data=TreeItemData(self.dir_tree.GetItemData(root).url + '#category='+name, os.path.join(root_data.path, name), root_data.depth+1)
 		elif root_data.depth == 2:
 			id = re.search(r'^\[(\d+)\]',name).group(1)
-			data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url.replace('#category','&id='+id+'#category'), os.path.join(root_data.path, name), root_data.depth+1))
+			data=TreeItemData(self.dir_tree.GetItemData(root).url.replace('#category','&id='+id+'#category'), os.path.join(root_data.path, name), root_data.depth+1)
 
 		item, cookie = self.dir_tree.GetFirstChild(root)
 		while item.IsOk():
@@ -806,7 +818,7 @@ class MainWindow(wx.Frame):
 	def RecreateTree(self):
 		self.dir_tree.Freeze()
 		self.dir_tree.DeleteAllItems()
-		self.dir_tree_root = self.dir_tree.AddRoot(self.dir_path, data=wx.TreeItemData(TreeItemData('http://bbs.jjwxc.net/showmsg.php?', self.dir_path, 0)))
+		self.dir_tree_root = self.dir_tree.AddRoot(self.dir_path, data=TreeItemData('http://bbs.jjwxc.net/showmsg.php?', self.dir_path, 0))
 		self.AddItem(self.dir_tree_root, self.dir_path, 1)
 		self.dir_tree.ExpandAll()
 		self.dir_tree.Thaw()
@@ -832,7 +844,7 @@ class MainWindow(wx.Frame):
 	def OnPopupItemSelected(self, evt):
 		item = self.file_popupmenu.FindItemById(evt.GetId()) or self.dir_popupmenu.FindItemById(evt.GetId())
 		text = item.GetText()
-		data = self.dir_tree.GetItemData(self.selected_item).GetData()
+		data = self.dir_tree.GetItemData(self.selected_item)
 		self_text = self.dir_tree.GetItemText(self.selected_item)
 		if text == '删除':
 			dlg = wx.MessageDialog(self, '确认真的要删除'+data.path+'吗?', '= =', wx.OK|wx.CANCEL|wx.ICON_QUESTION)
@@ -890,7 +902,7 @@ class MainWindow(wx.Frame):
 						if not inserted:
 							wx.MessageBox('同名分类已经存在!' )
 							return
-						data = self.dir_tree.GetItemData(new_node).GetData()
+						data = self.dir_tree.GetItemData(new_node)
 						try:
 							os.makedirs(data.path)
 						except Exception as e:
@@ -918,7 +930,7 @@ class MainWindow(wx.Frame):
 						if data.depth == 2:
 							child, cookie = self.dir_tree.GetFirstChild(self.selected_item)
 							while child.IsOk():
-								self.input_text.AppendText(self.dir_tree.GetItemData(child).GetData().url)
+								self.input_text.AppendText(self.dir_tree.GetItemData(child).url)
 								self.input_text.AppendText("\n")
 								child, cookie = self.dir_tree.GetNextChild(self.selected_item, cookie)
 						if data.depth == 1:
@@ -926,7 +938,7 @@ class MainWindow(wx.Frame):
 							while child.IsOk():
 								grandchild, childcookie = self.dir_tree.GetFirstChild(child)
 								while grandchild.IsOk():
-									self.input_text.AppendText(self.dir_tree.GetItemData(grandchild).GetData().url)
+									self.input_text.AppendText(self.dir_tree.GetItemData(grandchild).url)
 									self.input_text.AppendText("\n")
 									grandchild, childcookie = self.dir_tree.GetNextChild(child, childcookie)
 								child, cookie = self.dir_tree.GetNextChild(self.selected_item, cookie)
@@ -938,7 +950,7 @@ class MainWindow(wx.Frame):
 		new_category = self.category_menu.FindItemById(evt.GetId()).GetText()
 		board_node = self.dir_tree.GetItemParent(self.dir_tree.GetItemParent(self.selected_item))
 		name = self.dir_tree.GetItemText(self.selected_item)
-		old_path = self.dir_tree.GetItemData(self.dir_tree.GetItemParent(self.selected_item)).GetData().path
+		old_path = self.dir_tree.GetItemData(self.dir_tree.GetItemParent(self.selected_item)).path
 		category, cookie = self.dir_tree.GetFirstChild(board_node)
 		while category.IsOk():
 			if self.dir_tree.GetItemText(category) == new_category:
@@ -947,7 +959,7 @@ class MainWindow(wx.Frame):
 					self.dir_tree.Delete(self.selected_item)
 					self.dir_tree.SelectItem(new_node)
 					self.dir_tree.Expand(category)
-					new_path = self.dir_tree.GetItemData(self.dir_tree.GetItemParent(new_node)).GetData().path
+					new_path = self.dir_tree.GetItemData(self.dir_tree.GetItemParent(new_node)).path
 					try:
 						id=re.search(r'^\[(\d+)\].*\.(html|txt)$',name).group(1)
 						another_old_path = os.path.join(old_path,'images',id).decode(sys.getdefaultencoding())
@@ -983,7 +995,7 @@ class MainWindow(wx.Frame):
 					result = dlg.ShowModal()
 					dlg.Destroy()
 					if result == wx.ID_OK:
-						new_path = self.dir_tree.GetItemData(self.dir_tree.GetItemParent(new_node)).GetData().path
+						new_path = self.dir_tree.GetItemData(self.dir_tree.GetItemParent(new_node)).path
 						try:
 							id=re.search(r'^\[(\d+)\].*\.(html|txt)$',name).group(1)
 							another_old_path = os.path.join(old_path,'images',id).decode(sys.getdefaultencoding())
@@ -1024,7 +1036,7 @@ class MainWindow(wx.Frame):
 
 	def OnTreeNodeRightClick(self, evt):
 		self.selected_item = evt.GetItem()
-		data = self.dir_tree.GetItemData(self.selected_item).GetData()
+		data = self.dir_tree.GetItemData(self.selected_item)
 		if data.depth < 3:
 			if self.dir_tree.GetItemParent(self.selected_item) != self.dir_tree_root:
 				self.dir_popupmenu.GetMenuItems()[3].Enable(False)
@@ -1036,7 +1048,7 @@ class MainWindow(wx.Frame):
 			self.PopupMenu(self.dir_popupmenu)
 		else:
 			for item in self.category_menu.GetMenuItems():
-				self.category_menu.DeleteItem(item)
+				self.category_menu.Delete(item)
 			category_node = self.dir_tree.GetItemParent(self.selected_item)
 			board_node = self.dir_tree.GetItemParent(category_node)
 			category, cookie = self.dir_tree.GetFirstChild(board_node)
@@ -1101,14 +1113,14 @@ class MainWindow(wx.Frame):
 				if depth == 1:
 					if re.match(r'^\[\d+\]$', i):
 						id = re.search(r'^\[(\d+)\]$',i).group(1)
-						child = self.dir_tree.AppendItem(parent = root, text = i, data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + 'board='+id, tmpdir, depth)))
+						child = self.dir_tree.AppendItem(parent = root, text = i, data=TreeItemData(self.dir_tree.GetItemData(root).url + 'board='+id, tmpdir, depth))
 						self.AddItem(child,tmpdir,depth+1)
 				elif depth == 2 and i != 'images':
-					child = self.dir_tree.AppendItem(parent = root, text = i, data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url + '#category='+i, tmpdir, depth)))
+					child = self.dir_tree.AppendItem(parent = root, text = i, data=TreeItemData(self.dir_tree.GetItemData(root).url + '#category='+i, tmpdir, depth))
 					self.AddItem(child,tmpdir,depth+1)
 			elif depth == 3 and os.path.isfile(tmpdir) and re.match(r'^\[\d+\].*\.'+self.filetype_combo.GetValue()+'$',i) and self.search_text.lower() in i.lower():
 					id = re.search(r'^\[(\d+)\]',i).group(1)
-					child = self.dir_tree.AppendItem(parent = root, text = i, data=wx.TreeItemData(TreeItemData(self.dir_tree.GetItemData(root).GetData().url.replace('#category','&id='+id+'#category'), tmpdir, depth)))
+					child = self.dir_tree.AppendItem(parent = root, text = i, data=TreeItemData(self.dir_tree.GetItemData(root).url.replace('#category','&id='+id+'#category'), tmpdir, depth))
 
 	def RemoveItem(self,root,path):
 		pass
@@ -1170,7 +1182,7 @@ class MainApp(wx.App):
 		frame = MainWindow( None, -1, '小粉红存贴助手')
 		frame.Show(True)
 		return True
-		
+
 if __name__=='__main__':
 	global f
 	f = Fetcher(threads=10)
