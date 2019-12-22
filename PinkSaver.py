@@ -27,6 +27,9 @@ import subprocess
 from send2trash import send2trash
 import browsercookie
 
+#import ssl
+#print ssl.OPENSSL_VERSION
+
 try:
 	dirName = os.path.dirname(os.path.abspath(__file__))
 except:
@@ -668,7 +671,7 @@ class MainWindow(wx.Frame):
 		searchSizer = wx.BoxSizer(wx.HORIZONTAL)
 		
 		self.input_text_label = wx.StaticText(self, -1, '↓支持单个帖子/搜索结果/版面三类地址↓')
-		self.help_label = wx.lib.agw.hyperlink.HyperLinkCtrl(self,-1, '售后', URL='https://weibo.com/2884112034/profile?rightmod=1&wvr=6&mod=personnumber&is_search=1&key_word=PinkSaver&is_all=1#1577004319728')
+		self.help_label = wx.lib.agw.hyperlink.HyperLinkCtrl(self,-1, '售后', URL='https://weibo.com/2884112034/profile?is_search=1&key_word=PinkSaver&is_all=1')
 		self.help_label.SetBackgroundColour('#FFE7F7')
 		self.debug_checkbox = wx.CheckBox(self, -1, label='调试')
 		self.browserList = ['chrome', 'firefox']
