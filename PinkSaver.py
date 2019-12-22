@@ -456,7 +456,7 @@ class WorkerThread(Thread):
 			if self._want_abort_out:
 				return
 			href = href_node.get('href')
-			href = 'http://bbs.jjwxc.net/' + href
+			href = 'https://bbs.jjwxc.net/' + href
 			self.output('发现链接: ' + href)
 			self.main_handler(href, category, download_html, download_image, download_txt, debug, browser);
 			self.output('')
@@ -470,7 +470,7 @@ class WorkerThread(Thread):
 		except Exception as e:
 			return (self._invalid_page_type, category_from_url, url)
 		
-		if result.scheme != 'http' or result.netloc != 'bbs.jjwxc.net':
+		if result.scheme != 'https' or result.netloc != 'bbs.jjwxc.net':
 			return (self._invalid_page_type, category_from_url, url);
 		else:
 			parsed_url = list(result)
@@ -668,8 +668,8 @@ class MainWindow(wx.Frame):
 		searchSizer = wx.BoxSizer(wx.HORIZONTAL)
 		
 		self.input_text_label = wx.StaticText(self, -1, '↓支持单个帖子/搜索结果/版面三类地址↓')
-		#self.help_label = wx.lib.agw.hyperlink.HyperLinkCtrl(self,-1, '说明&更新&反馈', URL='http://bbs.jjwxc.net/showmsg.php?board=3&id=727804')
-		#self.help_label.SetBackgroundColour('#FFE7F7')
+		self.help_label = wx.lib.agw.hyperlink.HyperLinkCtrl(self,-1, '售后', URL='https://weibo.com/2884112034/profile?rightmod=1&wvr=6&mod=personnumber&is_search=1&key_word=PinkSaver&is_all=1#1577004319728')
+		self.help_label.SetBackgroundColour('#FFE7F7')
 		self.debug_checkbox = wx.CheckBox(self, -1, label='调试')
 		self.browserList = ['chrome', 'firefox']
 		self.browser_combobox = wx.ComboBox(self, -1, value =  "Chrome", choices = self.browserList, style = wx.CB_READONLY)
@@ -804,7 +804,7 @@ class MainWindow(wx.Frame):
 				self.dir_tree.SelectItem(item)
 				return (False, item)
 			if self.dir_tree.GetItemText(item) > name:
-				item = self.dir_tree.InsertItemBefore(parent=root, index=index, text=name, data=data)
+				item = self.dir_tree.InsertItem(parent=root, pos=index, text=name, data=data)
 				self.dir_tree.SelectItem(item)
 				return (True, item)
 			item, cookie = self.dir_tree.GetNextChild(root, cookie)
@@ -818,7 +818,7 @@ class MainWindow(wx.Frame):
 	def RecreateTree(self):
 		self.dir_tree.Freeze()
 		self.dir_tree.DeleteAllItems()
-		self.dir_tree_root = self.dir_tree.AddRoot(self.dir_path, data=TreeItemData('http://bbs.jjwxc.net/showmsg.php?', self.dir_path, 0))
+		self.dir_tree_root = self.dir_tree.AddRoot(self.dir_path, data=TreeItemData('https://bbs.jjwxc.net/showmsg.php?', self.dir_path, 0))
 		self.AddItem(self.dir_tree_root, self.dir_path, 1)
 		self.dir_tree.ExpandAll()
 		self.dir_tree.Thaw()
