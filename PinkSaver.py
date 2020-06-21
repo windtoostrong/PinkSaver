@@ -25,7 +25,7 @@ import shutil
 import socket
 import subprocess
 from send2trash import send2trash
-import browsercookie
+import browser_cookie
 
 #import ssl
 #print ssl.OPENSSL_VERSION
@@ -573,7 +573,7 @@ class WorkerThread(Thread):
 			# clear the exiting queue
 			for i in range(0, f.taskleft()):
 				f.pop()
-			self.output("使用 " + self._notify_window.browser_combobox.GetValue() + "浏览器的cookie, 请确保已登录论坛，否则将只能保存20层！")
+			self.output("使用 " + self._notify_window.browser_combobox.GetValue() + "浏览器的cookie, 请确保已登录论坛bbs.jjwxc.net，否则将只能保存20层！")
 			for url in self._notify_window.input_text.GetValue().split("\n"):
 				if self._want_abort_out:
 					return
@@ -634,9 +634,9 @@ class Fetcher:
 			try:
 				#ans = self.opener.open(param.get('url')).read()
 				if (param.get('browser') == 'chrome'):
-					cookies = browsercookie.chrome()
+					cookies = browser_cookie.chrome(domain_name='bbs.jjwxc.net')
 				else:
-					cookies = browsercookie.firefox()
+					cookies = browser_cookie.firefox(domain_name='bbs.jjwxc.net')
 				if cookies is None:
 					ans = requests.get(param.get('url'), headers=self.headers).content
 				else:
@@ -674,8 +674,8 @@ class MainWindow(wx.Frame):
 		self.help_label = wx.lib.agw.hyperlink.HyperLinkCtrl(self,-1, '售后', URL='https://weibo.com/2884112034/profile?is_search=1&key_word=PinkSaver&is_all=1')
 		self.help_label.SetBackgroundColour('#FFE7F7')
 		self.debug_checkbox = wx.CheckBox(self, -1, label='调试')
-		self.browserList = ['chrome', 'firefox']
-		self.browser_combobox = wx.ComboBox(self, -1, value =  "Chrome", choices = self.browserList, style = wx.CB_READONLY)
+		self.browserList = ['firefox']
+		self.browser_combobox = wx.ComboBox(self, -1, value =  "Firefox", choices = self.browserList, style = wx.CB_READONLY)
 		self.output_text_label = wx.StaticText(self, -1, '↓随便看不看的结果↓')
 		self.input_text = wx.TextCtrl(self, -1, style = wx.TE_MULTILINE | wx.TE_RICH | wx.TE_PROCESS_ENTER)
 		self.output_text = wx.TextCtrl(self, -1, style = wx.TE_MULTILINE | wx.TE_RICH | wx.TE_READONLY |wx.TE_PROCESS_ENTER) 
